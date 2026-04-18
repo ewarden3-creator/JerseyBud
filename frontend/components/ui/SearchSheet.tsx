@@ -7,23 +7,30 @@ import { X, Search, Sparkles, Loader2, ArrowRight, SlidersHorizontal } from "luc
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { ProductCardCompact } from "@/components/product/ProductCardCompact";
+import { BudAvatar } from "@/components/brand/BudAvatar";
 import { cn } from "@/lib/utils";
 
 const QUICK_INTENTS = [
   { label: "Help me sleep",    emoji: "🌙", query: "Something to help me sleep without grogginess" },
-  { label: "Creative focus",   emoji: "🎨", query: "Something uplifting for creative work, not too strong" },
+  { label: "Get creative",     emoji: "🎨", query: "Something uplifting for creative work, not too strong" },
   { label: "Relax after work", emoji: "😌", query: "Something to take the edge off after a long day" },
-  { label: "Social",           emoji: "💬", query: "Something social, chatty, good for hanging with friends" },
+  { label: "Be social",        emoji: "💬", query: "Something social, chatty, good for hanging with friends" },
   { label: "Pain relief",      emoji: "🩹", query: "Something for body pain that won't put me to sleep" },
-  { label: "Best deal",        emoji: "💰", query: "Best deal on flower near me" },
+  { label: "Best deal flower", emoji: "💰", query: "Best deal on flower near me" },
 ];
 
-// Heuristic: should this query be sent to Ask Bud (natural language)
-// or treated as a literal product/strain search?
+const BROWSE_CHIPS = [
+  { label: "On sale",    href: "/feed?on_sale=true" },
+  { label: "Best value", href: "/feed?sort=price_per_gram" },
+  { label: "High THC",   href: "/feed?min_thc=25" },
+  { label: "Sativa",     href: "/feed?product_type=sativa" },
+  { label: "Indica",     href: "/feed?product_type=indica" },
+  { label: "Hybrid",     href: "/feed?product_type=hybrid" },
+];
+
 function looksLikeAskBudQuery(q: string): boolean {
   const trimmed = q.trim();
   if (trimmed.length === 0) return false;
-  // Multi-word, contains a question mark, OR contains intent verbs/words
   const words = trimmed.split(/\s+/);
   if (words.length >= 4) return true;
   if (/[?!]/.test(trimmed)) return true;
@@ -34,37 +41,38 @@ function looksLikeAskBudQuery(q: string): boolean {
 interface Props {
   open: boolean;
   onClose: () => void;
+  initialQuery?: string | null;
 }
 
-export function SearchSheet({ open, onClose }: Props) {
+export function SearchSheet({ open, onClose, initialQuery }: Props) {
   const { lat, lng } = useLocation();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Search results (literal)
   const [results, setResults] = useState<ProductOut[]>([]);
   const [searching, setSearching] = useState(false);
-
-  // Ask Bud results (NLP)
   const [askResult, setAskResult] = useState<RecommendResponse | null>(null);
   const [asking, setAsking] = useState(false);
 
   const isAskBud = looksLikeAskBudQuery(query);
 
-  // Focus input on open
+  // Reset state on open / focus input / auto-fire if initialQuery provided
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 80);
-    else { setQuery(""); setResults([]); setAskResult(null); }
+    if (!open) { setQuery(""); setResults([]); setAskResult(null); return; }
+    if (initialQuery) {
+      setQuery(initialQuery);
+      askBud(initialQuery);
+    } else {
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
   }, [open]);
 
-  // Debounce search input
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 250);
     return () => clearTimeout(t);
   }, [query]);
 
-  // Live product search as you type (only when not an Ask Bud query)
   useEffect(() => {
     if (!debounced || isAskBud) { setResults([]); return; }
     setSearching(true);
@@ -119,7 +127,6 @@ export function SearchSheet({ open, onClose }: Props) {
               </button>
             </div>
 
-            {/* Mode hint + AskBud submit */}
             {query && (
               <div className="px-4 pb-2 flex items-center gap-2">
                 {isAskBud ? (
@@ -150,37 +157,42 @@ export function SearchSheet({ open, onClose }: Props) {
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto pb-32">
-            {/* Empty state — show quick intents to seed exploration */}
-            {!query && (
+            {/* Empty state — Bud greeting + intents + browse chips */}
+            {!query && !asking && (
               <div className="px-4 py-6">
-                <p className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-3">
-                  Ask Bud about…
-                </p>
-                <div className="grid grid-cols-2 gap-2 mb-6">
+                {/* Bud greeting */}
+                <div className="flex flex-col items-center text-center mb-6">
+                  <BudAvatar size={88} state="idle" />
+                  <p className="font-display font-bold text-xl text-white mt-3">Hi, I'm Bud.</p>
+                  <p className="text-sm text-zinc-400 mt-1 max-w-xs">
+                    Tell me what you're after, or pick an idea below.
+                  </p>
+                </div>
+
+                {/* Quick intent list — single-column, fires immediately on tap */}
+                <div className="space-y-2 mb-6">
                   {QUICK_INTENTS.map((i) => (
                     <button
                       key={i.label}
                       onClick={() => askBud(i.query)}
-                      className="bg-surface-card border border-surface-border rounded-2xl p-4 text-left hover:border-brand/50 transition-colors"
+                      className="w-full flex items-center gap-3 bg-surface-card border border-surface-border rounded-2xl px-4 py-3 hover:border-brand/40 transition-colors text-left"
                     >
-                      <span className="text-2xl block mb-2">{i.emoji}</span>
-                      <span className="text-sm text-white font-semibold leading-tight">{i.label}</span>
+                      <span className="text-2xl flex-shrink-0">{i.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white">{i.label}</p>
+                        <p className="text-[11px] text-zinc-500 truncate">{i.query}</p>
+                      </div>
+                      <ArrowRight size={14} className="text-zinc-600 flex-shrink-0" />
                     </button>
                   ))}
                 </div>
 
-                <p className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-3">
-                  Or browse by
+                {/* Browse chips — for "I know what category I want" */}
+                <p className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2 px-1">
+                  Or just browse
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: "On sale", href: "/feed?on_sale=true" },
-                    { label: "Best value", href: "/feed?sort=price_per_gram" },
-                    { label: "High THC", href: "/feed?min_thc=25" },
-                    { label: "Sativa", href: "/feed?product_type=sativa" },
-                    { label: "Indica", href: "/feed?product_type=indica" },
-                    { label: "Hybrid", href: "/feed?product_type=hybrid" },
-                  ].map((c) => (
+                  {BROWSE_CHIPS.map((c) => (
                     <Link
                       key={c.label}
                       href={c.href}
@@ -194,12 +206,21 @@ export function SearchSheet({ open, onClose }: Props) {
               </div>
             )}
 
+            {/* Bud is thinking */}
+            {asking && (
+              <div className="px-4 py-12 flex flex-col items-center text-center">
+                <BudAvatar size={96} state="thinking" />
+                <p className="text-sm text-zinc-400 mt-4 italic">"{query}"</p>
+                <p className="text-xs text-zinc-600 mt-1">Bud is thinking…</p>
+              </div>
+            )}
+
             {/* Ask Bud result */}
             {askResult && (
               <div className="px-4 py-4">
-                <div className="bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/30 rounded-2xl p-4 mb-3">
-                  <div className="flex items-start gap-2">
-                    <Sparkles size={14} className="text-brand mt-1 flex-shrink-0" />
+                <div className="flex items-start gap-3 mb-3">
+                  <BudAvatar size={48} state="speaking" className="flex-shrink-0 mt-1" />
+                  <div className="flex-1 bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/30 rounded-2xl p-4 rounded-tl-sm">
                     <p className="text-sm text-zinc-200 leading-relaxed">{askResult.answer}</p>
                   </div>
                 </div>
@@ -214,7 +235,7 @@ export function SearchSheet({ open, onClose }: Props) {
             )}
 
             {/* Live product search results */}
-            {!isAskBud && query && (
+            {!isAskBud && query && !asking && (
               <div className="px-4 py-4">
                 {searching && results.length === 0 ? (
                   <p className="text-zinc-500 text-sm py-8 text-center">Searching…</p>
