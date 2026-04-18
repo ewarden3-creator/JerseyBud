@@ -186,9 +186,9 @@ export function JerseyBudLockup({ markSize = 56 }: { markSize?: number }) {
 
 export function JerseyBudLockupCompact({ markSize = 32 }: { markSize?: number }) {
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex items-center gap-2.5">
       <ExitSignMark size={markSize} />
-      <span className="font-display font-black text-lg text-white tracking-tight">
+      <span className="font-display font-black text-xl text-white tracking-tight leading-none">
         Jersey Bud
       </span>
     </div>

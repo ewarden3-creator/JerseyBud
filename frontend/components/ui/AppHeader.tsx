@@ -7,9 +7,9 @@ import { JerseyBudLockupCompact } from "@/components/brand/JerseyBudLogo";
 export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 bg-surface/85 backdrop-blur-md border-b border-surface-border">
-      <div className="px-4 py-3 flex items-center gap-3">
+      <div className="px-4 py-2.5 flex items-center gap-3">
         <Link href="/" aria-label="Jersey Bud home">
-          <JerseyBudLockupCompact markSize={32} />
+          <JerseyBudLockupCompact markSize={48} />
         </Link>
         <div className="flex-1" />
         <Link

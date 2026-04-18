@@ -6,7 +6,7 @@ import { Sparkles, ArrowRight, Loader2, RotateCcw, Mic, Lock } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { ProductActionRow } from "@/components/ui/HandoffButtons";
 import { useAuth, isPro } from "@/lib/auth";
 import { ProBadge } from "@/components/pro/ProGate";
@@ -235,7 +235,7 @@ export default function RecommendPage() {
                       <ProductActionRow product={p} />
                     </div>
                   )}
-                  <ProductCard product={p} />
+                  <ProductCardCompact product={p} />
                 </div>
               ))}
             </div>

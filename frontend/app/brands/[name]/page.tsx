@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ArrowLeft, Flame, Clock, MapPin, Bell } from "lucide-react";
 import { api } from "@/lib/api";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 
 export default function BrandPage({ params }: { params: Promise<{ name: string }> }) {
   const { name } = use(params);
@@ -72,7 +72,7 @@ export default function BrandPage({ params }: { params: Promise<{ name: string }
 
       <div className="px-4 space-y-3">
         {products?.map((p) => (
-          <ProductCard key={p.id} product={p} />
+          <ProductCardCompact key={p.id} product={p} />
         ))}
       </div>
     </div>

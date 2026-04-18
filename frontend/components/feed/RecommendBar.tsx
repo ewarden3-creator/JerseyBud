@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 
 interface Props {
   lat: number | null;
@@ -78,7 +78,7 @@ export function RecommendBar({ lat, lng }: Props) {
               </div>
               <div className="space-y-3">
                 {result.products.map((p) => (
-                  <ProductCard key={p.id} product={p} compact />
+                  <ProductCardCompact key={p.id} product={p} />
                 ))}
               </div>
             </div>

@@ -5,7 +5,7 @@ import { SlidersHorizontal, Search, X } from "lucide-react";
 import useSWRInfinite from "swr/infinite";
 import { motion } from "framer-motion";
 import { FilterPanel, FilterState, DEFAULT_FILTERS } from "@/components/ui/FilterPanel";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { CannabisLeaf } from "@/components/ui/CannabisLeaf";
@@ -101,7 +101,7 @@ export default function FeedPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.04, 0.3) }}
           >
-            <ProductCard product={p} />
+            <ProductCardCompact product={p} />
           </motion.div>
         ))}
 

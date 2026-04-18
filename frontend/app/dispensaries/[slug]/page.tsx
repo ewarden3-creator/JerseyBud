@@ -8,7 +8,7 @@ import {
   Accessibility, CreditCard, Flag, ExternalLink,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { cn } from "@/lib/utils";
 
 const DAYS = [
@@ -249,7 +249,7 @@ export default function DispensaryDetail({ params }: { params: Promise<{ slug: s
         </div>
 
         <div className="space-y-3">
-          {menu?.map((p) => <ProductCard key={p.id} product={p} />)}
+          {menu?.map((p) => <ProductCardCompact key={p.id} product={p} />)}
           {menu && menu.length === 0 && (
             <p className="text-zinc-500 text-sm text-center py-8">No products in stock for this category.</p>
           )}

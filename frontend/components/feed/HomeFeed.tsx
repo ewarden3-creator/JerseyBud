@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Flame, TrendingUp, Sparkles, Tag, ChevronRight, Package2 } from "lucide-react";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { RecommendBar } from "@/components/feed/RecommendBar";
 import { BrandDropsRow } from "@/components/feed/BrandDropsRow";
 import { UpgradeBanner } from "@/components/pro/ProGate";
@@ -30,12 +30,12 @@ function SectionHeader({ icon: Icon, title, href }: { icon: any; title: string; 
 }
 
 // Horizontal scroll row of product cards
-function ProductRow({ products, onFavorite, onAlert }: { products: ProductOut[]; onFavorite?: (id: number) => void; onAlert?: (id: number) => void }) {
+function ProductRow({ products }: { products: ProductOut[] }) {
   return (
     <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
       {products.map((p) => (
         <div key={p.id} className="flex-shrink-0 w-72 snap-start">
-          <ProductCard product={p} onFavorite={onFavorite} onAlert={onAlert} compact />
+          <ProductCardCompact product={p} />
         </div>
       ))}
     </div>
