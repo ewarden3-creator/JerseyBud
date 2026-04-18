@@ -4,9 +4,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Flame, TrendingUp, Sparkles, Tag, ChevronRight, Package2 } from "lucide-react";
 import { ProductCardCompact } from "@/components/product/ProductCardCompact";
-import { RecommendBar } from "@/components/feed/RecommendBar";
 import { BrandDropsRow } from "@/components/feed/BrandDropsRow";
 import { UpgradeBanner } from "@/components/pro/ProGate";
+import { AskBudHero } from "@/components/feed/AskBudHero";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { useDeviceId } from "@/hooks/useDeviceId";
@@ -85,10 +85,8 @@ export function HomeFeed() {
 
   return (
     <div className="min-h-screen bg-surface pb-24">
-      {/* Recommender bar — serves the "I don't know what I want" user */}
-      <div className="px-4 py-4">
-        <RecommendBar lat={lat} lng={lng} />
-      </div>
+      {/* Ask Bud hero — quick intents + tap-to-open the search/ask sheet */}
+      <AskBudHero />
 
       {/* Pro upgrade nudge — hidden for Pro users automatically */}
       <UpgradeBanner message="Unlock predictive pricing, voice chat, and a Bud that learns your taste." />
@@ -99,11 +97,7 @@ export function HomeFeed() {
         {deals && deals.length > 0 && (
           <section>
             <SectionHeader icon={Tag} title="Hottest Deals" href="/feed?sort=pct_off" />
-            <ProductRow
-              products={deals.map((d) => d.product)}
-              onFavorite={(id) => console.log("fav", id)}
-              onAlert={(id) => console.log("alert", id)}
-            />
+            <ProductRow products={deals.map((d) => d.product)} />
           </section>
         )}
 

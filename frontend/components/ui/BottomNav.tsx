@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Sparkles, Map, ShoppingBasket } from "lucide-react";
+import { Home, Map, ShoppingBasket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/",          icon: Home,           label: "Home"    },
-  { href: "/feed",      icon: Search,         label: "Browse"  },
-  { href: "/recommend", icon: Sparkles,       label: "Ask Bud" },
-  { href: "/map",       icon: Map,            label: "Map"     },
-  { href: "/list",      icon: ShoppingBasket, label: "List"    },
+  { href: "/",     icon: Home,           label: "Home" },
+  { href: "/map",  icon: Map,            label: "Map"  },
+  { href: "/list", icon: ShoppingBasket, label: "List" },
 ];
 
 export function BottomNav() {
@@ -29,13 +27,12 @@ export function BottomNav() {
                 active ? "text-brand" : "text-zinc-600 hover:text-zinc-400"
               )}
             >
-              <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
               <span className="font-medium">{label}</span>
             </Link>
           );
         })}
       </div>
-      {/* iOS safe area */}
       <div className="h-safe-area-bottom" />
     </nav>
   );
