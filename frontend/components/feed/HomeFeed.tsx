@@ -116,7 +116,7 @@ export function HomeFeed() {
         {/* Best Value — lowest $/g */}
         {valuePicks && valuePicks.length > 0 && (
           <section>
-            <SectionHeader icon={Flame} title="Best Value ($/g)" href="/feed?sort=price_per_gram" />
+            <SectionHeader icon={Flame} title="Best Value" href="/feed?sort=price_per_gram" />
             <ProductRow products={valuePicks.map((d) => d.product)} />
           </section>
         )}

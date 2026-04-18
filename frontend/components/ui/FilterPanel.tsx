@@ -97,7 +97,7 @@ export function FilterPanel({ filters, onChange, onClose }: Props) {
 
   const SORT_OPTIONS = [
     { key: "relevance",     label: "Relevance" },
-    { key: "price_per_gram",label: "Best Value ($/g)" },
+    { key: "price_per_gram",label: "Best Value" },
     { key: "thc",           label: "Highest THC" },
     { key: "sale",          label: "Biggest Discount" },
     { key: "distance",      label: "Nearest First" },

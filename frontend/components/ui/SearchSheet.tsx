@@ -175,7 +175,7 @@ export function SearchSheet({ open, onClose }: Props) {
                 <div className="flex flex-wrap gap-2">
                   {[
                     { label: "On sale", href: "/feed?on_sale=true" },
-                    { label: "Best $/g", href: "/feed?sort=price_per_gram" },
+                    { label: "Best value", href: "/feed?sort=price_per_gram" },
                     { label: "High THC", href: "/feed?min_thc=25" },
                     { label: "Sativa", href: "/feed?product_type=sativa" },
                     { label: "Indica", href: "/feed?product_type=indica" },
