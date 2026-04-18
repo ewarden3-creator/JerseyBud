@@ -28,7 +28,7 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
   const [selectedWeight, setSelectedWeight] = useState("3.5g");
   const [activeTab, setActiveTab] = useState<"compare" | "lab" | "history">("compare");
 
-  const locParams = lat ? { lat: String(lat), lng: String(lng) } : {};
+  const locParams: Record<string, string> = lat ? { lat: String(lat), lng: String(lng) } : {};
 
   const { data: comparisons } = useSWR(
     ["strain-compare", strainName, lat, lng],

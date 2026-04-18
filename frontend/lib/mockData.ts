@@ -93,7 +93,21 @@ function makePricing(eighth: number, isOnSale: boolean = false): PricingEntry[] 
   ];
 }
 
-const RAW_PRODUCTS = [
+interface RawProduct {
+  strain: string;
+  type: string;
+  thc: number;
+  cbd: number;
+  brand: string;
+  eighth: number;
+  sale: boolean;
+  pctOff: number;
+  terps: Record<string, number>;
+  effects: string[];
+  canna: Record<string, number>;
+}
+
+const RAW_PRODUCTS: RawProduct[] = [
   { strain: "GG4",                  type: "hybrid", thc: 28.4, cbd: 0.1, brand: "Verano",       eighth: 50, sale: true,  pctOff: 30, terps: { myrcene: 0.42, caryophyllene: 0.38, limonene: 0.21, pinene: 0.14, humulene: 0.09 }, effects: ["relaxed", "happy", "euphoric"], canna: { thca: 24.1, cbg: 0.4, cbn: 0.1 } },
   { strain: "Wedding Cake",         type: "indica", thc: 26.2, cbd: 0.0, brand: "Curaleaf",     eighth: 55, sale: false, pctOff: 0,  terps: { caryophyllene: 0.51, limonene: 0.34, myrcene: 0.18, linalool: 0.12 }, effects: ["relaxed", "sleepy", "happy"], canna: { thca: 22.8, cbg: 0.3 } },
   { strain: "Blue Dream",           type: "sativa", thc: 22.1, cbd: 0.2, brand: "Garden Greens",eighth: 40, sale: true,  pctOff: 25, terps: { myrcene: 0.62, pinene: 0.41, caryophyllene: 0.23, limonene: 0.18 }, effects: ["creative", "uplifted", "euphoric"], canna: { thca: 19.4, cbg: 0.2 } },

@@ -67,7 +67,7 @@ function TrendPill({ trend }: { trend: TrendEntry }) {
 export function HomeFeed() {
   const deviceId = useDeviceId();
   const { lat, lng } = useLocation();
-  const locParams = lat ? { lat: String(lat), lng: String(lng) } : {};
+  const locParams: Record<string, string> = lat ? { lat: String(lat), lng: String(lng) } : {};
 
   const { data: deals } = useSWR(
     ["deals", lat, lng],

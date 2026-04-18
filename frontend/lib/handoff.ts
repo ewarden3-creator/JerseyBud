@@ -37,7 +37,7 @@ export function productHandoffUrl(product: ProductOut): string | null {
   if (dispo.source === "iheartjane") {
     // iHJ store URL: https://www.iheartjane.com/stores/<store-id>
     // Product URL:   https://www.iheartjane.com/stores/<store-id>/products/<product-id>
-    const storeId = dispo.source_id ?? dispo.slug.replace(/^ihj-/, "");
+    const storeId = dispo.slug.replace(/^ihj-/, "");
     return `https://www.iheartjane.com/stores/${storeId}/products/${product.source_id}`;
   }
 

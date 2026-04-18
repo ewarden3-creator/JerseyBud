@@ -10,7 +10,15 @@ import {
 import { useAuth, getPricing, isPro } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-const FEATURE_MATRIX = [
+type FeatureRow = {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  free: boolean | string;
+  pro: boolean;
+  desc: string;
+};
+
+const FEATURE_MATRIX: FeatureRow[] = [
   { icon: Filter,   label: "Advanced filters",            free: false, pro: true,  desc: "Filter by terpene, cannabinoid, value/g" },
   { icon: Bell,     label: "Unlimited price alerts",      free: "3 max", pro: true, desc: "Free is capped at 3 active alerts" },
   { icon: Heart,    label: "Unlimited favorites",         free: "5 max", pro: true, desc: "Free is capped at 5" },
@@ -19,7 +27,7 @@ const FEATURE_MATRIX = [
   { icon: Mic,      label: "Voice chat with Ask Bud",     free: false, pro: true,  desc: "Talk to Bud, hands free" },
   { icon: BarChart2,label: "Price history + lab archives",free: false, pro: true,  desc: "Charts back 90 days; all batch lab data" },
   { icon: Crown,    label: "Cohort recommendations",      free: false, pro: true,  desc: "What kush/haze/dessert lovers like you are loving" },
-] as const;
+];
 
 export default function UpgradePage() {
   const router = useRouter();
