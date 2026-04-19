@@ -4,7 +4,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Heart } from "lucide-react";
-import { CannabinoidStrip } from "@/components/charts/CannabinoidStrip";
 import { TerpeneDonut } from "@/components/charts/TerpeneDonut";
 import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
 import { useDeviceId } from "@/hooks/useDeviceId";
@@ -111,14 +110,6 @@ export function ProductCardCompact({ product, isFavorited }: Props) {
                 </button>
               </div>
 
-              {/* Cannabinoid strip — tiny visual lab data */}
-              <div className="mt-2">
-                <CannabinoidStrip
-                  thcPct={product.thc_pct}
-                  cbdPct={product.cbd_pct}
-                  cannabinoids={product.cannabinoids}
-                />
-              </div>
             </div>
 
             {/* Bottom: price + value grade */}

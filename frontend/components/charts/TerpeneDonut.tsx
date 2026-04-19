@@ -13,18 +13,21 @@ interface DonutProps {
   thcPct: number | null;
   cbdPct?: number | null;
   size?: number;
-  /** Show terpene labels around the perimeter (only readable at large sizes) */
+  /** How many top terpenes to show as segments (default 3, max 6 for verbose) */
+  maxSegments?: number;
+  /** Show terpene name + % around the perimeter (use at sizes ≥ 180) */
   showLabels?: boolean;
   className?: string;
 }
 
 export function TerpeneDonut({
-  terpenes, thcPct, cbdPct = null, size = 110, showLabels = false, className,
+  terpenes, thcPct, cbdPct = null, size = 110,
+  maxSegments = 3, showLabels = false, className,
 }: DonutProps) {
   const top3 = Object.entries(terpenes ?? {})
     .filter(([, v]) => v > 0)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
+    .slice(0, maxSegments);
 
   const cx = size / 2;
   const cy = size / 2;
@@ -58,6 +61,9 @@ export function TerpeneDonut({
     const pct = val / total;
     const segLen = pct * circumference - gap;
     const offset = cumulative;
+    // Mid-angle of this segment (in radians, 0 = top, going clockwise)
+    const midPct = (cumulative + (pct * circumference) / 2) / circumference;
+    const midAngle = midPct * Math.PI * 2 - Math.PI / 2;
     cumulative += pct * circumference;
     return {
       name,
@@ -65,11 +71,17 @@ export function TerpeneDonut({
       color: terpColor(name),
       strokeDasharray: `${segLen} ${circumference - segLen}`,
       strokeDashoffset: -offset,
+      midAngle,
     };
   });
 
+  // Labels need wider container so the text doesn't get clipped
+  const containerSize = showLabels ? size + 100 : size;
+  const labelOffset = showLabels ? 50 : 0;
+
   return (
-    <div className={cn("relative inline-block", className)} style={{ width: size, height: size }}>
+    <div className={cn("relative inline-block", className)} style={{ width: containerSize, height: containerSize }}>
+    <div className="absolute" style={{ left: labelOffset, top: labelOffset, width: size, height: size }}>
       <svg
         width={size}
         height={size}
@@ -117,6 +129,31 @@ export function TerpeneDonut({
           </span>
         </div>
       )}
+    </div>
+
+    {/* Perimeter labels — only render when showLabels is true */}
+    {showLabels && segments.map((seg) => {
+      const labelR = (size / 2) + 14;
+      const x = labelOffset + size / 2 + labelR * Math.cos(seg.midAngle);
+      const y = labelOffset + size / 2 + labelR * Math.sin(seg.midAngle);
+      return (
+        <div
+          key={`label-${seg.name}`}
+          className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
+          style={{ left: x, top: y, minWidth: 70 }}
+        >
+          <div className="flex items-center justify-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: seg.color }} />
+            <span className="text-[10px] font-bold text-white whitespace-nowrap">
+              {friendlyTerp(seg.name)}
+            </span>
+          </div>
+          <span className="text-[9px] text-zinc-500 font-semibold">
+            {seg.val.toFixed(2)}%
+          </span>
+        </div>
+      );
+    })}
     </div>
   );
 }

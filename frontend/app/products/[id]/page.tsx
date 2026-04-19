@@ -235,12 +235,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Terpenes legend */}
+      {/* Terpenes — full breakdown with the verbose donut */}
       {hasTerpenes && (
         <div className="px-4 mt-4">
           <p className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">Terpenes</p>
-          <div className="bg-surface-card border border-surface-border rounded-2xl p-4">
-            <TerpeneLegend terpenes={product.terpenes!} />
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-5 flex flex-col items-center">
+            <TerpeneDonut
+              terpenes={product.terpenes!}
+              thcPct={product.thc_pct}
+              cbdPct={product.cbd_pct}
+              size={180}
+              maxSegments={6}
+              showLabels
+            />
+            <div className="mt-4 pt-4 border-t border-surface-border w-full">
+              <TerpeneLegend terpenes={product.terpenes!} max={8} />
+            </div>
           </div>
         </div>
       )}
