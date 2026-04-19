@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, Search, Mic, ChevronDown, RefreshCw, Store, Globe2 } from "lucide-react";
+import { Sparkles, Search, Mic, ChevronDown, RefreshCw, Store, Globe2, MapPin } from "lucide-react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
@@ -42,6 +42,15 @@ const SORT_OPTIONS = [
   { key: "relevance",      label: "Default" },
 ];
 
+// Persisted distance filter (in miles, or null = no limit)
+const RADIUS_KEY = "jb-radius-miles";
+const RADIUS_OPTIONS: Array<{ key: number | null; label: string }> = [
+  { key: 5,    label: "5 mi"   },
+  { key: 10,   label: "10 mi"  },
+  { key: 25,   label: "25 mi"  },
+  { key: null, label: "All NJ" },
+];
+
 export function HomeFeed() {
   const { lat, lng } = useLocation();
   const { slug: preferredShopSlug, set: setPreferredShop } = useShopPreference();
@@ -53,6 +62,21 @@ export function HomeFeed() {
   const [onSale, setOnSale] = useState(false);
   const [sort, setSort] = useState<string>("price_per_gram");
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [radius, setRadius] = useState<number | null>(10);
+  const [showRadiusMenu, setShowRadiusMenu] = useState(false);
+
+  // Hydrate persisted radius
+  useEffect(() => {
+    const stored = localStorage.getItem(RADIUS_KEY);
+    if (stored === "null") setRadius(null);
+    else if (stored) setRadius(parseInt(stored));
+  }, []);
+
+  function updateRadius(r: number | null) {
+    setRadius(r);
+    localStorage.setItem(RADIUS_KEY, r === null ? "null" : String(r));
+    setShowRadiusMenu(false);
+  }
 
   // Resolve shop name for the indicator (only fetches when set)
   const { data: preferredShop } = useSWR(
@@ -69,8 +93,10 @@ export function HomeFeed() {
     if (onSale) p.on_sale = "true";
     if (lat) p.lat = String(lat);
     if (lng) p.lng = String(lng);
+    // Distance filter only matters when not scoped to a specific shop
+    if (!preferredShopSlug && radius != null) p.radius_miles = String(radius);
     return p;
-  }, [preferredShopSlug, category, productType, onSale, sort, lat, lng]);
+  }, [preferredShopSlug, category, productType, onSale, sort, lat, lng, radius]);
 
   const { data: products, isLoading, mutate } = useSWR(
     ["inventory", params],
@@ -188,6 +214,41 @@ export function HomeFeed() {
           >
             On Sale
           </button>
+
+          {/* Distance filter — only when browsing all NJ + we have user location */}
+          {!preferredShopSlug && lat != null && (
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowRadiusMenu(!showRadiusMenu)}
+                className={cn(
+                  "flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-pill border transition-colors",
+                  radius != null
+                    ? "bg-brand/15 border-brand/50 text-brand"
+                    : "border-surface-border text-zinc-400"
+                )}
+              >
+                <MapPin size={11} />
+                {radius != null ? `${radius} mi` : "All NJ"}
+                <ChevronDown size={10} />
+              </button>
+              {showRadiusMenu && (
+                <div className="absolute left-0 top-full mt-1 bg-surface-elevated border border-surface-border rounded-xl py-1 shadow-xl z-30 min-w-[120px]">
+                  {RADIUS_OPTIONS.map((r) => (
+                    <button
+                      key={String(r.key)}
+                      onClick={() => updateRadius(r.key)}
+                      className={cn(
+                        "w-full text-left text-xs px-3 py-2 hover:bg-surface-card transition-colors",
+                        radius === r.key ? "text-brand font-bold" : "text-zinc-300"
+                      )}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Sort dropdown — pushed right */}
           <div className="ml-auto relative flex-shrink-0">
