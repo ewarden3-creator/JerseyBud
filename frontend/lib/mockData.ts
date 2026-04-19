@@ -506,6 +506,11 @@ function judge(body: any): TasteJudgment {
   return j;
 }
 
+function allJudgments(deviceId: string, verdict?: string): TasteJudgment[] {
+  const list = _judgments.get(deviceId) ?? [];
+  return verdict ? list.filter((j) => j.verdict === verdict) : list;
+}
+
 function checkTaste(params: any): TasteCheck {
   const deviceId = params.device_id ?? "anon";
   const list = _judgments.get(deviceId) ?? [];
@@ -533,7 +538,7 @@ export const mock = {
   drops: MOCK_DROPS,
   filterOptions: MOCK_FILTER_OPTIONS,
   priceHistoryFor, labHistoryFor, strainCompareFor, medianPriceFor,
-  shoppingListFor, addToList, removeFromList, judge, checkTaste,
+  shoppingListFor, addToList, removeFromList, judge, checkTaste, allJudgments,
 
   recommend: (query: string): RecommendResponse => ({
     answer: `Based on "${query}", I'd recommend the GG4 from Verano at Curaleaf Bellmawr — it's on sale 30% off ($35 for an eighth, just $10/g), high THC at 28.4%, and the heavy myrcene + caryophyllene profile delivers exactly the deep relaxation you're after. The Granddaddy Purple at Curaleaf is another solid value pick at $10.86/g if you want to lean even more sedating.`,

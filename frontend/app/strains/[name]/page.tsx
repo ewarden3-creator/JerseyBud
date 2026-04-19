@@ -22,6 +22,7 @@ import { directionsUrl, productHandoffUrl, handoffLabel } from "@/lib/handoff";
 import { Navigation, ShoppingBag, Lock } from "lucide-react";
 import Link from "next/link";
 import { useAuth, isPro } from "@/lib/auth";
+import { AvoidButton } from "@/components/taste/AvoidButton";
 import { cn } from "@/lib/utils";
 
 const WEIGHT_OPTIONS = ["1g", "3.5g", "7g", "14g", "28g"];
@@ -74,21 +75,26 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
         <button onClick={() => router.back()} className="text-zinc-500 hover:text-white mb-4 flex items-center gap-1 transition-colors">
           <ArrowLeft size={16} /> Back
         </button>
-        <h1 className="font-display font-bold text-3xl text-white leading-tight">{strainName}</h1>
-        {latestLab && (
-          <div className="flex gap-3 mt-2">
-            {latestLab.thc_pct && (
-              <span className="text-sm font-semibold">
-                THC <span className="text-brand">{latestLab.thc_pct.toFixed(1)}%</span>
-              </span>
-            )}
-            {latestLab.total_terpenes_pct && (
-              <span className="text-sm font-semibold">
-                Terps <span className="text-orange-400">{latestLab.total_terpenes_pct.toFixed(2)}%</span>
-              </span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h1 className="font-display font-bold text-3xl text-white leading-tight">{strainName}</h1>
+            {latestLab && (
+              <div className="flex gap-3 mt-2">
+                {latestLab.thc_pct && (
+                  <span className="text-sm font-semibold">
+                    THC <span className="text-brand">{latestLab.thc_pct.toFixed(1)}%</span>
+                  </span>
+                )}
+                {latestLab.total_terpenes_pct && (
+                  <span className="text-sm font-semibold">
+                    Terps <span className="text-orange-400">{latestLab.total_terpenes_pct.toFixed(2)}%</span>
+                  </span>
+                )}
+              </div>
             )}
           </div>
-        )}
+          <AvoidButton scope="strain" name={strainName} className="flex-shrink-0 mt-1" />
+        </div>
       </div>
 
       {/* Big donut + matching color-coded terpene pills.

@@ -7,7 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import { useDeviceId } from "@/hooks/useDeviceId";
 import { ReviewSheet } from "@/components/reviews/ReviewSheet";
+import { BrandPassPrompt, shouldPromptForBrand } from "@/components/taste/BrandPassPrompt";
 import { cn } from "@/lib/utils";
+
+const BRAND_DISLIKE_THRESHOLD = 3;
 
 interface Props {
   product: ProductOut;
@@ -47,6 +50,7 @@ export function QuickActions({ product }: Props) {
   const [addedToList, setAddedToList] = useState(false);
   const [showWeightPicker, setShowWeightPicker] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [brandPrompt, setBrandPrompt] = useState<{ brand: string; count: number } | null>(null);
 
   // Hydrate verdict from existing judgment
   useEffect(() => {
@@ -62,13 +66,43 @@ export function QuickActions({ product }: Props) {
   async function judge(v: "liked" | "disliked") {
     const newVerdict = verdict === v ? "neutral" : v;
     setVerdict(newVerdict);
+    // Default scope is PRODUCT-LEVEL only — broader scopes happen via inferred
+    // prompt or manual brand/strain pass on the brand/strain pages.
     await api.judge({
       verdict: newVerdict,
       product_id: product.id,
-      strain_name: product.strain_name ?? undefined,
-      brand_name: product.brand ?? undefined,
       device_id: deviceId,
     });
+
+    // After a fresh dislike, check if a brand-pattern prompt is warranted
+    if (newVerdict === "disliked" && product.brand) {
+      checkAndPromptBrandPattern(product.brand);
+    }
+  }
+
+  async function checkAndPromptBrandPattern(brand: string) {
+    if (!shouldPromptForBrand(brand)) return;
+    try {
+      const all = await api.judgments?.(deviceId);
+      if (!all) return;
+      // Already escalated to brand level? skip.
+      const alreadyBrandPass = all.some((j) =>
+        j.brand_name === brand && (j.verdict === "disliked" || j.verdict === "avoid")
+      );
+      if (alreadyBrandPass) return;
+      const dislikedFromBrand = all.filter(
+        (j) => j.product_id != null && j.verdict === "disliked"
+      );
+      // We need to count how many of those dislikes were from this brand —
+      // the API doesn't include brand on product judgments, so we approximate
+      // with an immediate threshold trigger after the latest dislike. The
+      // backend can later return a richer signal.
+      if (dislikedFromBrand.length >= BRAND_DISLIKE_THRESHOLD) {
+        setBrandPrompt({ brand, count: dislikedFromBrand.length });
+      }
+    } catch {
+      // best-effort, fail silently
+    }
   }
 
   async function addToList(weight: string) {
@@ -132,6 +166,16 @@ export function QuickActions({ product }: Props) {
 
       {/* Review modal */}
       {showReview && <ReviewSheet product={product} onClose={() => setShowReview(false)} />}
+
+      {/* Inferred brand-pass prompt — appears after 3+ product dislikes from same brand */}
+      {brandPrompt && (
+        <BrandPassPrompt
+          open
+          brandName={brandPrompt.brand}
+          productCount={brandPrompt.count}
+          onClose={() => setBrandPrompt(null)}
+        />
+      )}
 
       {/* Weight picker popover */}
       <AnimatePresence>

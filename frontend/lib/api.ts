@@ -125,6 +125,9 @@ export const api = {
   checkTaste: (params: { product_id?: number; strain_name?: string; brand_name?: string; device_id?: string }) => USE_MOCK
     ? mockReturn(mock.checkTaste(params))
     : apiFetch<TasteCheck>(`/taste/check?${new URLSearchParams(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))}`),
+  judgments: (deviceId: string, verdict?: string) => USE_MOCK
+    ? mockReturn(mock.allJudgments(deviceId, verdict))
+    : apiFetch<TasteJudgment[]>(`/taste/me?device_id=${deviceId}${verdict ? `&verdict=${verdict}` : ""}`),
 };
 
 function filterMockProducts(params: Record<string, string>): ProductOut[] {

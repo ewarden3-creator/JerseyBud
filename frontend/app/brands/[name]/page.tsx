@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { ArrowLeft, Flame, Clock, MapPin, Bell } from "lucide-react";
 import { api } from "@/lib/api";
 import { ProductCardCompact } from "@/components/product/ProductCardCompact";
+import { AvoidButton } from "@/components/taste/AvoidButton";
 
 export default function BrandPage({ params }: { params: Promise<{ name: string }> }) {
   const { name } = use(params);
@@ -67,6 +68,11 @@ export default function BrandPage({ params }: { params: Promise<{ name: string }
           <button className="w-full mt-3 flex items-center justify-center gap-2 bg-brand text-black font-bold py-3 rounded-xl hover:bg-brand-dark transition-colors">
             <Bell size={14} /> Notify me on next drop
           </button>
+        </div>
+
+        {/* Manual avoid escape hatch */}
+        <div className="mt-4 flex justify-end">
+          <AvoidButton scope="brand" name={brandName} />
         </div>
       </div>
 
