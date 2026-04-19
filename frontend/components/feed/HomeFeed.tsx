@@ -1,176 +1,234 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ChevronRight, MapPin, ShoppingBag } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles, Search, Mic, ChevronDown, RefreshCw } from "lucide-react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { ProductCardCompact } from "@/components/product/ProductCardCompact";
-import { BrandDropsRow } from "@/components/feed/BrandDropsRow";
-import { AskBudHero } from "@/components/feed/AskBudHero";
-import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
+import { SearchSheet } from "@/components/ui/SearchSheet";
+import { cn } from "@/lib/utils";
 
-function SectionHeader({ title, kicker, href }: { title: string; kicker?: string; href?: string }) {
-  return (
-    <div className="flex items-end justify-between px-5 mb-4">
-      <div>
-        {kicker && (
-          <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-0.5">{kicker}</p>
-        )}
-        <h2 className="font-display font-black text-white text-2xl leading-none">{title}</h2>
-      </div>
-      {href && (
-        <Link href={href} className="text-sm text-brand font-semibold flex items-center gap-0.5">
-          See all <ChevronRight size={14} />
-        </Link>
-      )}
-    </div>
-  );
-}
+const QUICK_INTENTS = [
+  { emoji: "🌙", label: "Sleep",    query: "Something to help me sleep" },
+  { emoji: "🎨", label: "Creative", query: "Something uplifting for creative work" },
+  { emoji: "😌", label: "Relax",    query: "Something to take the edge off" },
+  { emoji: "💰", label: "Best deal", query: "Best deal on flower near me" },
+];
 
-function ProductRow({ products }: { products: ProductOut[] }) {
-  return (
-    <div className="flex gap-3 overflow-x-auto px-5 pb-2 snap-x snap-mandatory scrollbar-hide">
-      {products.map((p) => (
-        <div key={p.id} className="flex-shrink-0 w-[330px] snap-start">
-          <ProductCardCompact product={p} />
-        </div>
-      ))}
-    </div>
-  );
-}
+const CATEGORIES = [
+  { key: "flower",      label: "Flower" },
+  { key: "pre-roll",    label: "Pre-Roll" },
+  { key: "vaporizer",   label: "Vape" },
+  { key: "edible",      label: "Edible" },
+  { key: "concentrate", label: "Concentrate" },
+];
 
-// The hero — singular, dominant, today's top deal
-function TopDealHero({ deal }: { deal: DealOut }) {
-  const p = deal.product;
-  return (
-    <div className="px-5 pt-2 pb-2">
-      <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-2">
-        Today's top deal
-      </p>
-      <Link href={`/products/${p.id}`}>
-        <div className="bg-surface-card border border-surface-border rounded-3xl overflow-hidden active:border-brand/40 transition-colors">
-          {/* Big image */}
-          <div className="relative w-full aspect-[16/9] bg-zinc-900 overflow-hidden">
-            {p.image_url ? (
-              <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-            ) : (
-              <ProductPlaceholder
-                productType={p.product_type}
-                strainName={p.strain_name}
-                className="w-full h-full"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-transparent" />
-            {/* Sale stamp top-right */}
-            {deal.sale_pct_off && (
-              <div className="absolute top-4 right-4 bg-orange-500 text-white text-sm font-black px-3 py-1.5 rounded-pill">
-                {deal.sale_pct_off.toFixed(0)}% OFF
-              </div>
-            )}
-            {/* Strain name overlaid bottom */}
-            <div className="absolute bottom-4 left-4 right-4">
-              <p className="text-white text-xs font-semibold opacity-80">{p.brand}</p>
-              <h3 className="text-white font-display font-black text-3xl leading-tight">
-                {p.strain_name ?? p.name}
-              </h3>
-            </div>
-          </div>
+const TYPES = [
+  { key: "sativa", label: "Sativa" },
+  { key: "indica", label: "Indica" },
+  { key: "hybrid", label: "Hybrid" },
+];
 
-          {/* Stat strip */}
-          <div className="px-5 py-4">
-            <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-4xl font-black text-white">${deal.best_price.toFixed(0)}</span>
-              {deal.original_price && (
-                <span className="text-base text-zinc-500 line-through ml-1">${deal.original_price}</span>
-              )}
-              <span className="text-sm text-zinc-400 ml-1">{deal.best_weight}</span>
-              {deal.best_price_per_gram && (
-                <span className="text-sm font-semibold text-brand ml-2">
-                  ${deal.best_price_per_gram}/g
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-              <MapPin size={11} className="text-zinc-600" />
-              <span>{deal.dispensary_name}</span>
-              {deal.distance_miles != null && (
-                <span className="text-zinc-600">· {deal.distance_miles.toFixed(1)} mi</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </Link>
-    </div>
-  );
-}
+const SORT_OPTIONS = [
+  { key: "price_per_gram", label: "Best $/g" },
+  { key: "thc",            label: "Highest THC" },
+  { key: "sale",           label: "Biggest discount" },
+  { key: "distance",       label: "Nearest first" },
+  { key: "relevance",      label: "Default" },
+];
 
 export function HomeFeed() {
   const { lat, lng } = useLocation();
-  const locParams: Record<string, string> = lat ? { lat: String(lat), lng: String(lng) } : {};
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [seedQuery, setSeedQuery] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>("flower");
+  const [productType, setProductType] = useState<string | null>(null);
+  const [onSale, setOnSale] = useState(false);
+  const [sort, setSort] = useState<string>("price_per_gram");
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
-  const { data: deals } = useSWR(["deals", lat, lng], () =>
-    api.deals({ ...locParams, sort: "pct_off", limit: "12" })
+  // Build query params for the inventory fetch
+  const params: Record<string, string> = useMemo(() => {
+    const p: Record<string, string> = { sort, limit: "60" };
+    if (category) p.category = category;
+    if (productType) p.product_type = productType;
+    if (onSale) p.on_sale = "true";
+    if (lat) p.lat = String(lat);
+    if (lng) p.lng = String(lng);
+    return p;
+  }, [category, productType, onSale, sort, lat, lng]);
+
+  const { data: products, isLoading, mutate } = useSWR(
+    ["inventory", params],
+    () => api.products(params)
   );
-  const { data: valuePicks } = useSWR(["deals-value", lat, lng], () =>
-    api.deals({ ...locParams, sort: "price_per_gram", limit: "12" })
-  );
-  const { data: trends } = useSWR("trends", () => api.trends("flower"));
-  const { data: brands } = useSWR("brands", () => api.brands());
+
+  const lastUpdated = useMemo(() => new Date(), [products]);
+  const minutesSinceUpdate = Math.max(1, Math.floor((Date.now() - lastUpdated.getTime()) / 60000));
+
+  function openAi(query?: string) {
+    setSeedQuery(query ?? null);
+    setSearchOpen(true);
+  }
 
   return (
     <div className="min-h-screen bg-surface pb-32">
-      <AskBudHero />
+      {/* AI concierge — the prominent entry to the assistant */}
+      <div className="px-5 pt-4 pb-3">
+        <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-2">
+          What are you in the mood for?
+        </p>
+        <button
+          onClick={() => openAi()}
+          className="w-full flex items-center gap-3 bg-surface-card border border-surface-border hover:border-brand/50 rounded-2xl px-4 py-3.5 transition-colors text-left mb-2"
+        >
+          <Sparkles size={16} className="text-brand flex-shrink-0" />
+          <span className="flex-1 text-[15px] text-zinc-400">Tell Bud what you're after…</span>
+          <Mic size={14} className="text-zinc-600" />
+        </button>
 
-      <div className="space-y-10 mt-4">
-        {/* On sale — the cards do the visual work now */}
-        {deals && deals.length > 0 && (
-          <section>
-            <SectionHeader kicker="Save big" title="On sale near you" href="/feed?on_sale=true" />
-            <ProductRow products={deals.map((d) => d.product)} />
-          </section>
+        {/* Quick intent chips — inline, single row */}
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
+          {QUICK_INTENTS.map((i) => (
+            <button
+              key={i.label}
+              onClick={() => openAi(i.query)}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 bg-surface-card border border-surface-border hover:border-brand/40 rounded-pill px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+            >
+              <span>{i.emoji}</span>
+              <span>{i.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sticky filter bar — category tabs + freshness + sort */}
+      <div className="sticky top-[61px] z-20 bg-surface/85 backdrop-blur-md border-b border-surface-border">
+        {/* Category tabs */}
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide px-5 pt-3">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.key}
+              onClick={() => setCategory(c.key)}
+              className={cn(
+                "flex-shrink-0 px-3 py-2 text-sm font-bold rounded-pill transition-colors whitespace-nowrap",
+                category === c.key
+                  ? "bg-brand text-black"
+                  : "text-zinc-400 hover:text-white"
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Type pills + sort + on sale toggle */}
+        <div className="flex items-center gap-2 px-5 py-2.5 overflow-x-auto scrollbar-hide">
+          {TYPES.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setProductType(productType === t.key ? null : t.key)}
+              className={cn(
+                "flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-pill border transition-colors",
+                productType === t.key
+                  ? "bg-brand/15 border-brand/50 text-brand"
+                  : "border-surface-border text-zinc-400"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setOnSale(!onSale)}
+            className={cn(
+              "flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-pill border transition-colors",
+              onSale
+                ? "bg-orange-500/15 border-orange-500/50 text-orange-400"
+                : "border-surface-border text-zinc-400"
+            )}
+          >
+            On Sale
+          </button>
+
+          {/* Sort dropdown — pushed right */}
+          <div className="ml-auto relative flex-shrink-0">
+            <button
+              onClick={() => setShowSortMenu(!showSortMenu)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-pill border border-surface-border text-zinc-300 hover:text-white flex items-center gap-1"
+            >
+              {SORT_OPTIONS.find((s) => s.key === sort)?.label}
+              <ChevronDown size={11} />
+            </button>
+            {showSortMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-surface-elevated border border-surface-border rounded-xl py-1 shadow-xl z-30 min-w-[180px]">
+                {SORT_OPTIONS.map((s) => (
+                  <button
+                    key={s.key}
+                    onClick={() => { setSort(s.key); setShowSortMenu(false); }}
+                    className={cn(
+                      "w-full text-left text-xs px-3 py-2 hover:bg-surface-card transition-colors",
+                      sort === s.key ? "text-brand font-bold" : "text-zinc-300"
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Freshness + count strip */}
+        <div className="flex items-center justify-between px-5 py-2 border-t border-surface-border/40">
+          <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              <span className="text-emerald-400 font-bold">{products?.length ?? "—"}</span> in stock now
+            </span>
+          </div>
+          <button
+            onClick={() => mutate()}
+            className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-brand transition-colors"
+          >
+            <RefreshCw size={9} />
+            Updated {minutesSinceUpdate}m ago
+          </button>
+        </div>
+      </div>
+
+      {/* Inventory list */}
+      <div className="px-5 pt-4 space-y-3">
+        {isLoading && (
+          <p className="text-zinc-500 text-sm py-8 text-center">Loading inventory…</p>
         )}
 
-        {/* Best Value */}
-        {valuePicks && valuePicks.length > 0 && (
-          <section>
-            <SectionHeader kicker="Most for your money" title="Best value" href="/feed?sort=price_per_gram" />
-            <ProductRow products={valuePicks.map((d) => d.product)} />
-          </section>
-        )}
+        {products?.map((p, i) => (
+          <motion.div
+            key={p.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(i * 0.025, 0.4) }}
+          >
+            <ProductCardCompact product={p} />
+          </motion.div>
+        ))}
 
-        {/* Trending strains */}
-        {trends && trends.length > 0 && (
-          <section>
-            <SectionHeader kicker="Right now" title="Trending in NJ" />
-            <div className="flex gap-3 overflow-x-auto px-5 pb-2 snap-x scrollbar-hide">
-              {trends.slice(0, 12).map((t) => (
-                <Link
-                  key={t.strain_name}
-                  href={`/strains/${encodeURIComponent(t.strain_name)}`}
-                  className="flex-shrink-0 bg-surface-card border border-surface-border rounded-2xl px-5 py-4 hover:border-brand/40 transition-colors min-w-[180px]"
-                >
-                  <p className="font-display font-bold text-white text-base leading-tight mb-1">{t.strain_name}</p>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    {t.product_type && <span className="capitalize">{t.product_type}</span>}
-                    {t.avg_thc && <span className="text-brand font-semibold">· {t.avg_thc}% THC</span>}
-                  </div>
-                  <p className="text-xs text-zinc-600 mt-2">at {t.dispensary_count} dispensaries</p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Brand drops */}
-        {brands && brands.length > 0 && (
-          <section>
-            <SectionHeader kicker="Fresh shelves" title="Brand drops" href="/brands" />
-            <BrandDropsRow brands={brands} />
-          </section>
+        {products && products.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-white font-semibold mb-1">No products match these filters</p>
+            <p className="text-zinc-500 text-sm">Try clearing filters or asking Bud for help.</p>
+          </div>
         )}
       </div>
+
+      <SearchSheet
+        open={searchOpen}
+        onClose={() => { setSearchOpen(false); setSeedQuery(null); }}
+        initialQuery={seedQuery}
+      />
     </div>
   );
 }
