@@ -46,7 +46,7 @@ const RADIUS_OPTIONS: Array<{ key: number | null; label: string }> = [
 
 export function HomeFeed() {
   const { lat, lng } = useLocation();
-  const { slug: preferredShopSlug, set: setPreferredShop } = useShopPreference();
+  const { slugs: preferredShopSlugs, set: setPreferredShops } = useShopPreference();
   const [searchOpen, setSearchOpen] = useState(false);
   const [seedQuery, setSeedQuery] = useState<string | null>(null);
   const [shopPickerOpen, setShopPickerOpen] = useState(false);
@@ -71,25 +71,26 @@ export function HomeFeed() {
     setShowRadiusMenu(false);
   }
 
-  // Resolve shop name for the indicator (only fetches when set)
-  const { data: preferredShop } = useSWR(
-    preferredShopSlug ? ["shop", preferredShopSlug] : null,
-    () => api.dispensary(preferredShopSlug!)
+  // Resolve first shop's name for the chip label (when only one selected)
+  const firstSlug = preferredShopSlugs[0];
+  const { data: firstShop } = useSWR(
+    preferredShopSlugs.length === 1 && firstSlug ? ["shop", firstSlug] : null,
+    () => api.dispensary(firstSlug!)
   );
 
   // Build query params for the inventory fetch
   const params: Record<string, string> = useMemo(() => {
     const p: Record<string, string> = { sort, limit: "60" };
-    if (preferredShopSlug) p.dispensary_slug = preferredShopSlug;
+    if (preferredShopSlugs.length > 0) p.dispensary_slugs = preferredShopSlugs.join(",");
     if (category) p.category = category;
     if (productType) p.product_type = productType;
     if (onSale) p.on_sale = "true";
     if (lat) p.lat = String(lat);
     if (lng) p.lng = String(lng);
-    // Distance filter only matters when not scoped to a specific shop
-    if (!preferredShopSlug && radius != null) p.radius_miles = String(radius);
+    // Distance filter only matters when not scoped to specific shops
+    if (preferredShopSlugs.length === 0 && radius != null) p.radius_miles = String(radius);
     return p;
-  }, [preferredShopSlug, category, productType, onSale, sort, lat, lng, radius]);
+  }, [preferredShopSlugs, category, productType, onSale, sort, lat, lng, radius]);
 
   const { data: products, isLoading, mutate } = useSWR(
     ["inventory", params],
@@ -104,9 +105,13 @@ export function HomeFeed() {
     setSearchOpen(true);
   }
 
-  // Default-state empty shop chip behaves like a CTA — brand-tinted with action copy
-  const noShopSelected = !preferredShopSlug;
-  const shopLabel = preferredShop ? preferredShop.name : noShopSelected ? "Choose your shop" : "All NJ shops";
+  // Chip label by selection state
+  const noShopSelected = preferredShopSlugs.length === 0;
+  const shopLabel = noShopSelected
+    ? "Choose your shops"
+    : preferredShopSlugs.length === 1
+      ? (firstShop?.name ?? "1 shop")
+      : `${preferredShopSlugs.length} shops`;
 
   return (
     <div className="min-h-screen bg-surface pb-32">
@@ -196,7 +201,7 @@ export function HomeFeed() {
           </button>
 
           {/* Distance filter — only when browsing all NJ + we have user location */}
-          {!preferredShopSlug && lat != null && (
+          {noShopSelected && lat != null && (
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowRadiusMenu(!showRadiusMenu)}
@@ -294,8 +299,8 @@ export function HomeFeed() {
       <ShopPicker
         open={shopPickerOpen}
         onClose={() => setShopPickerOpen(false)}
-        selectedSlug={preferredShopSlug}
-        onSelect={setPreferredShop}
+        selectedSlugs={preferredShopSlugs}
+        onChange={setPreferredShops}
       />
     </div>
   );

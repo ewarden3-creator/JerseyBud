@@ -38,8 +38,9 @@ async def list_products(
     # Terpene filters: e.g. terpenes=beta_myrcene,limonene  min_terpene_pct=0.1
     terpenes: str | None = Query(None, description="Comma-separated keys, e.g. beta_myrcene,limonene"),
     min_terpene_pct: float = Query(0.0),
-    # Single-shop filter — for users who always shop at one dispo
+    # Shop filter — single (dispensary_slug) OR comma-separated multi (dispensary_slugs)
     dispensary_slug: str | None = Query(None),
+    dispensary_slugs: str | None = Query(None, description="CSV of slugs to include"),
     search: str | None = Query(None),
     sort: str = Query("relevance"),  # relevance | price_per_gram | thc | distance | sale
     limit: int = Query(50, le=200),
@@ -55,6 +56,10 @@ async def list_products(
 
     if dispensary_slug:
         stmt = stmt.where(Dispensary.slug == dispensary_slug)
+    elif dispensary_slugs:
+        slugs = [s.strip() for s in dispensary_slugs.split(",") if s.strip()]
+        if slugs:
+            stmt = stmt.where(Dispensary.slug.in_(slugs))
     if category:
         stmt = stmt.where(Product.category == category.lower())
     if product_type:

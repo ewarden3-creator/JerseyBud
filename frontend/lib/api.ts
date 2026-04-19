@@ -130,6 +130,10 @@ export const api = {
 function filterMockProducts(params: Record<string, string>): ProductOut[] {
   let out = [...mock.products];
   if (params.dispensary_slug) out = out.filter((p) => p.dispensary.slug === params.dispensary_slug);
+  else if (params.dispensary_slugs) {
+    const allowed = new Set(params.dispensary_slugs.split(",").filter(Boolean));
+    out = out.filter((p) => allowed.has(p.dispensary.slug));
+  }
   if (params.radius_miles) {
     const max = parseFloat(params.radius_miles);
     out = out.filter((p) => (p.distance_miles ?? 0) <= max);
