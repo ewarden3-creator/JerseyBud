@@ -92,7 +92,7 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
               terpenes={latestLab.terpenes}
               thcPct={latestLab.thc_pct}
               cbdPct={latestLab.cbd_pct}
-              size={140}
+              size={120}
             />
             <div className="flex-1 min-w-0">
               {latestLab.terpenes && Object.keys(latestLab.terpenes).length > 0 && (

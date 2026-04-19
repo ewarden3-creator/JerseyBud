@@ -63,13 +63,13 @@ export function ProductCardCompact({ product, isFavorited }: Props) {
           {/* Terpene donut — top 3 terpenes as colored arcs, THC% in center.
               Same colors used in the legend pills below the card → user learns
               the visual language by seeing both side-by-side. */}
-          <div className="flex-shrink-0 relative w-[110px] h-[110px] flex items-center justify-center">
+          <div className="flex-shrink-0 relative w-[88px] h-[88px] flex items-center justify-center">
             {product.terpenes && Object.keys(product.terpenes).length > 0 ? (
               <TerpeneDonut
                 terpenes={product.terpenes}
                 thcPct={product.thc_pct}
                 cbdPct={product.cbd_pct}
-                size={110}
+                size={88}
               />
             ) : (
               <ProductPlaceholder
