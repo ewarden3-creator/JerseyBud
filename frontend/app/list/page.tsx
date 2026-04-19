@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBasket, X, MapPin, AlertTriangle, TrendingDown, TrendingUp,
-  Minus, Trophy, Clock, ShoppingBag, Navigation, Award,
+  Minus, Trophy, Clock, ShoppingBag, Navigation, Award, Plus,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useDeviceId } from "@/hooks/useDeviceId";
@@ -14,6 +14,7 @@ import { directionsUrl, productHandoffUrl } from "@/lib/handoff";
 import { computeOTDC, airlineStylePrediction } from "@/lib/otdc";
 import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
 import { ProBadge } from "@/components/pro/ProGate";
+import { AddItemSheet } from "@/components/list/AddItemSheet";
 import { useAuth, isPro } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export default function ShoppingListPage() {
   const deviceId = useDeviceId();
   const auth = useAuth();
   const userIsPro = isPro(auth);
+  const [addOpen, setAddOpen] = useState(false);
 
   const { data: list, mutate } = useSWR(
     deviceId ? ["list", deviceId] : null,
@@ -150,9 +152,17 @@ export default function ShoppingListPage() {
       {/* Item list — airline-style price predictions per item */}
       <div className="px-5 space-y-3">
         {list.items.length > 0 && (
-          <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-1">
-            Tracking these
-          </p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold">
+              Tracking these
+            </p>
+            <button
+              onClick={() => setAddOpen(true)}
+              className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:text-brand-dark transition-colors"
+            >
+              <Plus size={12} strokeWidth={2.5} /> Add more
+            </button>
+          </div>
         )}
         <AnimatePresence>
           {list.items.map((item) => (
@@ -170,15 +180,34 @@ export default function ShoppingListPage() {
         </AnimatePresence>
 
         {list.items.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
             <ShoppingBasket size={36} className="text-zinc-700 mb-3" />
             <p className="text-white font-semibold mb-1">Your list is empty</p>
-            <p className="text-zinc-500 text-sm max-w-xs">
-              Tap "Add to list" on any product. We'll track prices and tell you the cheapest place to pick everything up.
+            <p className="text-zinc-500 text-sm max-w-xs mb-5">
+              Add the products you want to pick up. We'll find the shop with the lowest out-the-door price.
             </p>
+            <button
+              onClick={() => setAddOpen(true)}
+              className="inline-flex items-center gap-2 bg-brand text-black font-bold px-5 py-3 rounded-2xl hover:bg-brand-dark transition-colors"
+            >
+              <Plus size={16} strokeWidth={2.5} /> Add your first item
+            </button>
           </div>
         )}
       </div>
+
+      {/* Floating + button when list has items, for quick add anytime */}
+      {list.items.length > 0 && (
+        <button
+          onClick={() => setAddOpen(true)}
+          className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full bg-brand text-black shadow-xl flex items-center justify-center hover:bg-brand-dark transition-all hover:scale-105 active:scale-95"
+          aria-label="Add items"
+        >
+          <Plus size={22} strokeWidth={2.5} />
+        </button>
+      )}
+
+      <AddItemSheet open={addOpen} onClose={() => setAddOpen(false)} onAdded={mutate} />
     </div>
   );
 }
