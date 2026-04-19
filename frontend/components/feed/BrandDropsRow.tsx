@@ -66,8 +66,8 @@ function JustDroppedCard({ brand }: { brand: BrandSummary }) {
                   </div>
                 </div>
                 {p.thc_pct && (
-                  <span className="text-xs font-bold text-brand flex-shrink-0">
-                    {p.thc_pct.toFixed(0)}%
+                  <span className="text-[10px] font-bold text-brand flex-shrink-0 whitespace-nowrap">
+                    {p.thc_pct.toFixed(0)}% THC
                   </span>
                 )}
               </div>
