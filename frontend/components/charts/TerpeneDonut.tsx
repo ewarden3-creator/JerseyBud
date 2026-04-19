@@ -107,23 +107,23 @@ export function TerpeneDonut({
       {/* Center label — outside SVG so we don't fight rotation */}
       {centerNum != null && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="flex items-baseline gap-px leading-none">
+          <div className="flex items-baseline gap-[1px] leading-none">
             <span
-              className="font-display font-black text-white"
-              style={{ fontSize: size * 0.28, lineHeight: 1 }}
+              className="font-sans font-bold text-white tabular-nums"
+              style={{ fontSize: size * 0.22, lineHeight: 1 }}
             >
               {centerNum.toFixed(0)}
             </span>
             <span
-              className="font-bold text-zinc-400"
-              style={{ fontSize: size * 0.13, lineHeight: 1 }}
+              className="font-sans font-semibold text-zinc-500"
+              style={{ fontSize: size * 0.11, lineHeight: 1 }}
             >
               %
             </span>
           </div>
           <span
-            className="text-zinc-500 font-bold uppercase tracking-wider mt-1"
-            style={{ fontSize: size * 0.085, lineHeight: 1 }}
+            className="text-zinc-500 font-semibold uppercase tracking-wider mt-1"
+            style={{ fontSize: size * 0.08, lineHeight: 1, letterSpacing: "0.08em" }}
           >
             {centerLabel}
           </span>
