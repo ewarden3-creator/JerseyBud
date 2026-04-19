@@ -154,43 +154,52 @@ export default function ShoppingListPage() {
   );
 }
 
-// Compact item chip — thumbnail + name + tiny remove button
+// Compact item chip — thumbnail + name + tiny remove button.
+// Taste warning takes precedence over airline prediction (it's more critical).
 function ItemChip({ item, onRemove, userIsPro }: { item: ShoppingItem; onRemove: (id: number) => void; userIsPro: boolean }) {
   const prediction = airlineStylePrediction(item.prediction);
   const tone = prediction ? TONE_STYLES[prediction.tone] : null;
   const ToneIcon = tone?.icon;
+  const hasWarning = !!item.taste_warning;
 
   return (
-    <div className="flex-shrink-0 w-36 bg-surface-card border border-surface-border rounded-2xl p-2.5 relative">
+    <div className={cn(
+      "flex-shrink-0 w-36 bg-surface-card border rounded-2xl p-2.5 relative transition-colors",
+      hasWarning ? "border-red-500/50" : "border-surface-border"
+    )}>
       <button
         onClick={() => onRemove(item.id)}
-        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-surface-elevated/80 backdrop-blur flex items-center justify-center text-zinc-500 hover:text-red-400 transition-colors"
+        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-surface-elevated/80 backdrop-blur flex items-center justify-center text-zinc-500 hover:text-red-400 transition-colors z-10"
         aria-label="Remove"
       >
         <X size={11} />
       </button>
-      <div className="w-full aspect-square rounded-xl overflow-hidden mb-2 relative">
+      <div className="w-full aspect-square rounded-xl overflow-hidden mb-2">
         <ProductPlaceholder
           productType={item.product.product_type}
           strainName={item.product.strain_name}
           className="w-full h-full"
         />
-        {item.taste_warning && (
-          <div className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center" title={item.taste_warning}>
-            <AlertTriangle size={11} />
-          </div>
-        )}
       </div>
       <p className="text-xs font-bold text-white leading-tight line-clamp-1">
         {item.product.strain_name ?? item.product.name}
       </p>
       <p className="text-[10px] text-zinc-500 mt-0.5">{item.weight} · {item.quantity}×</p>
-      {userIsPro && tone && ToneIcon && (
+
+      {/* State chip — taste warning trumps prediction */}
+      {hasWarning ? (
+        <div className="flex items-center gap-1 mt-1.5 bg-red-500/15 border border-red-500/30 rounded-pill px-1.5 py-0.5 w-fit">
+          <span className="text-[10px]">👎</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-red-400">
+            Past pass
+          </span>
+        </div>
+      ) : userIsPro && tone && ToneIcon ? (
         <div className="flex items-center gap-1 mt-1.5">
           <ToneIcon size={9} className={tone.color} />
           <span className={cn("text-[9px] font-bold", tone.color)}>{prediction?.label}</span>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
