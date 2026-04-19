@@ -86,7 +86,7 @@ export default function RecommendPage() {
           <Sparkles size={20} className="text-brand" />
           <h1 className="font-display font-bold text-2xl text-white">Ask Bud</h1>
           {userIsPro && (
-            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-pill bg-amber-500/20 text-amber-400 border border-amber-500/40 ml-1">
+            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-pill bg-brand/20 text-brand border border-brand/40 ml-1">
               Personalized
             </span>
           )}
@@ -109,7 +109,7 @@ export default function RecommendPage() {
               <Mic size={11} /> Voice
             </button>
           ) : (
-            <Link href="/upgrade" className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-pill bg-surface-card border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <Link href="/upgrade" className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-pill bg-surface-card border border-brand/40 text-brand hover:bg-brand/10 transition-colors">
               <Lock size={10} /> <Mic size={11} /> Voice <ProBadge className="ml-1" />
             </Link>
           )}
@@ -124,9 +124,9 @@ export default function RecommendPage() {
             animate={{ opacity: 1 }}
             className="px-4"
           >
-            <div className="rounded-3xl bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                <Lock size={18} className="text-amber-400" />
+            <div className="rounded-3xl bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center">
+                <Lock size={18} className="text-brand" />
               </div>
               <h2 className="font-display font-bold text-lg text-white mb-1">
                 You've used your {FREE_QUERIES_PER_DAY} free questions today
@@ -136,7 +136,7 @@ export default function RecommendPage() {
               </p>
               <Link
                 href="/upgrade"
-                className="inline-flex items-center gap-2 bg-amber-400 text-black font-bold px-5 py-3 rounded-xl"
+                className="inline-flex items-center gap-2 bg-brand text-black font-bold px-5 py-3 rounded-xl"
               >
                 <Sparkles size={14} /> Try Pro free for 7 days
               </Link>

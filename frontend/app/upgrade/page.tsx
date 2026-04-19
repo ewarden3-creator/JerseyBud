@@ -50,7 +50,7 @@ export default function UpgradePage() {
   if (isPro(auth) && !done) {
     return (
       <div className="min-h-screen bg-surface px-4 pt-12 pb-24 text-center">
-        <Crown size={48} className="text-amber-400 mx-auto mb-3" />
+        <Crown size={48} className="text-brand mx-auto mb-3" />
         <h1 className="font-display font-black text-2xl text-white">You're already Pro</h1>
         <p className="text-zinc-400 mt-2">Manage your subscription on the account page.</p>
         <button
@@ -74,9 +74,9 @@ export default function UpgradePage() {
 
       {/* Hero */}
       <div className="px-4 pt-4 pb-6 text-center">
-        <div className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/40 px-3 py-1 rounded-pill mb-4">
-          <Sparkles size={11} className="text-amber-400" />
-          <span className="text-[10px] font-black tracking-widest uppercase text-amber-400">
+        <div className="inline-flex items-center gap-1.5 bg-brand/15 border border-brand/40 px-3 py-1 rounded-pill mb-4">
+          <Sparkles size={11} className="text-brand" />
+          <span className="text-[10px] font-black tracking-widest uppercase text-brand">
             Jersey Bud Pro
           </span>
         </div>
@@ -90,15 +90,15 @@ export default function UpgradePage() {
 
       {/* Founder badge if applicable */}
       {auth.isFounder && (
-        <div className="mx-4 mb-4 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/40 rounded-2xl p-4">
+        <div className="mx-4 mb-4 bg-gradient-to-r from-brand/20 via-brand/10 to-transparent border border-brand/40 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1">
-            <Crown size={14} className="text-amber-400" />
-            <span className="text-xs font-black tracking-widest uppercase text-amber-400">
+            <Crown size={14} className="text-brand" />
+            <span className="text-xs font-black tracking-widest uppercase text-brand">
               Founder Pricing
             </span>
           </div>
           <p className="text-sm text-white">
-            You're one of the first 1,000. Lock in <span className="font-bold text-amber-400">$3.99/mo</span> forever — even when we raise prices.
+            You're one of the first 1,000. Lock in <span className="font-bold text-brand">$3.99/mo</span> forever — even when we raise prices.
           </p>
         </div>
       )}
@@ -125,7 +125,7 @@ export default function UpgradePage() {
             Annual
             <span className={cn(
               "text-[10px] font-black uppercase px-1.5 py-0.5 rounded-pill",
-              interval === "annual" ? "bg-black/20 text-black" : "bg-amber-500/20 text-amber-400"
+              interval === "annual" ? "bg-black/20 text-black" : "bg-brand/20 text-brand"
             )}>
               −{pricing.savingsPct}%
             </span>
@@ -133,14 +133,14 @@ export default function UpgradePage() {
           <motion.div
             layout
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute inset-y-1 w-[calc(50%-4px)] bg-amber-400 rounded-xl"
+            className="absolute inset-y-1 w-[calc(50%-4px)] bg-brand rounded-xl"
             style={{ left: interval === "monthly" ? 4 : "calc(50% + 0px)" }}
           />
         </div>
       </div>
 
       {/* Price card */}
-      <div className="mx-4 mb-6 p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-surface-card to-surface-card border border-amber-500/30">
+      <div className="mx-4 mb-6 p-6 rounded-3xl bg-gradient-to-br from-brand/10 via-surface-card to-surface-card border border-brand/30">
         <div className="flex items-baseline justify-center gap-1 mb-1">
           <span className="text-5xl font-black text-white">
             ${interval === "monthly" ? pricing.monthly : pricing.monthlyEquivalent}
@@ -152,7 +152,7 @@ export default function UpgradePage() {
             Billed ${pricing.annual} annually
           </p>
         )}
-        <p className="text-center text-xs text-amber-400 font-semibold">
+        <p className="text-center text-xs text-brand font-semibold">
           7-day free trial · cancel anytime
         </p>
       </div>
@@ -168,8 +168,8 @@ export default function UpgradePage() {
             const freeAllowed = f.free === true;
             return (
               <div key={f.label} className="px-4 py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                  <Icon size={14} className="text-amber-400" />
+                <div className="w-9 h-9 rounded-xl bg-brand/15 border border-brand/30 flex items-center justify-center flex-shrink-0">
+                  <Icon size={14} className="text-brand" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white leading-tight">{f.label}</p>
@@ -186,8 +186,8 @@ export default function UpgradePage() {
                   <span className="text-[9px] text-zinc-700 uppercase tracking-wider">Free</span>
                 </div>
                 <div className="flex flex-col items-center gap-1 flex-shrink-0 w-12 text-center">
-                  <Check size={14} className="text-amber-400" />
-                  <span className="text-[9px] text-amber-400 uppercase tracking-wider font-bold">Pro</span>
+                  <Check size={14} className="text-brand" />
+                  <span className="text-[9px] text-brand uppercase tracking-wider font-bold">Pro</span>
                 </div>
               </div>
             );
@@ -222,7 +222,7 @@ export default function UpgradePage() {
               animate={{ opacity: 1 }}
               onClick={checkout}
               disabled={loading}
-              className="w-full bg-amber-400 hover:bg-amber-300 disabled:bg-amber-400/50 text-black font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-brand hover:bg-brand-dark disabled:bg-brand/50 text-black font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 transition-colors"
             >
               {loading ? (
                 <><Loader2 size={18} className="animate-spin" /> Starting trial…</>

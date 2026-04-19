@@ -1,49 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Mic, ArrowRight } from "lucide-react";
+import { Search, Mic } from "lucide-react";
 import { SearchSheet } from "@/components/ui/SearchSheet";
-import { BudAvatar } from "@/components/brand/BudAvatar";
 
+// Slim, single-line entry to search/Ask Bud.
+// No avatar, no greeting clutter — just a clear, inviting input.
 export function AskBudHero() {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [initialQuery, setInitialQuery] = useState<string | null>(null);
-
-  function open(query?: string) {
-    setInitialQuery(query ?? null);
-    setSearchOpen(true);
-  }
+  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <div className="px-4 pt-4 pb-2">
-        {/* Bud greeting + search-style entry */}
-        <div className="flex items-center gap-3 mb-3">
-          <BudAvatar size={56} state="idle" className="flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-zinc-400 leading-tight">Hey, I'm Bud.</p>
-            <p className="text-base text-white font-display font-bold leading-tight">
-              What are you in the mood for?
-            </p>
-          </div>
-        </div>
-
-        {/* Tap-to-open search/ask bar */}
+      <div className="px-5 pt-5 pb-1">
         <button
-          onClick={() => open()}
+          onClick={() => setOpen(true)}
           className="w-full flex items-center gap-3 bg-surface-card border border-surface-border hover:border-brand/40 rounded-2xl px-4 py-3.5 transition-colors text-left"
         >
           <Search size={16} className="text-zinc-500 flex-shrink-0" />
-          <span className="flex-1 text-sm text-zinc-500">Search or ask Bud anything…</span>
+          <span className="flex-1 text-[15px] text-zinc-500">Search or ask Bud…</span>
           <Mic size={14} className="text-zinc-600" />
         </button>
       </div>
 
-      <SearchSheet
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setInitialQuery(null); }}
-        initialQuery={initialQuery}
-      />
+      <SearchSheet open={open} onClose={() => setOpen(false)} initialQuery={null} />
     </>
   );
 }

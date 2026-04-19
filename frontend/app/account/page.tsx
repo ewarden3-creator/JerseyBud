@@ -37,7 +37,7 @@ export default function AccountPage() {
           <p className="text-xs text-zinc-500 mt-0.5">Anonymous device synced</p>
         </div>
         {auth.isFounder && (
-          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-pill bg-amber-500/20 text-amber-400 border border-amber-500/40">
+          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-pill bg-brand/20 text-brand border border-brand/40">
             <Crown size={9} /> Founder
           </span>
         )}
@@ -52,7 +52,7 @@ export default function AccountPage() {
       <div className="mx-4 mb-4 bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
         <Link href="/reviews/me" className="px-4 py-3 flex items-center gap-3 hover:bg-surface-elevated transition-colors">
           <div className="w-9 h-9 rounded-xl bg-surface-elevated flex items-center justify-center">
-            <Award size={14} className="text-amber-400" />
+            <Award size={14} className="text-brand" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-white">Reviews & credits</p>
@@ -104,19 +104,19 @@ function ProSubscriptionCard() {
   const isTrialing = auth.status === "trialing";
 
   return (
-    <div className="bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 rounded-2xl p-5">
+    <div className="bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Crown size={16} className="text-amber-400" />
+          <Crown size={16} className="text-brand" />
           <span className="text-sm font-bold text-white">Jersey Bud Pro</span>
           {auth.isFounderPricing && (
-            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-pill bg-amber-500/20 text-amber-400 border border-amber-500/40">
+            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-pill bg-brand/20 text-brand border border-brand/40">
               Founder rate
             </span>
           )}
         </div>
         {isTrialing && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-brand">
             Trial · {trialDays}d left
           </span>
         )}
@@ -163,18 +163,18 @@ function FreeUpgradeCard() {
   return (
     <Link
       href="/upgrade"
-      className="block bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 rounded-2xl p-5 hover:border-amber-500/70 transition-colors"
+      className="block bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 rounded-2xl p-5 hover:border-brand/70 transition-colors"
     >
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles size={14} className="text-amber-400" />
-        <span className="text-[10px] font-black tracking-widest uppercase text-amber-400">
+        <Sparkles size={14} className="text-brand" />
+        <span className="text-[10px] font-black tracking-widest uppercase text-brand">
           Free Plan
         </span>
       </div>
       <p className="text-sm text-white mb-3">
         Unlock predictive pricing, voice chat, personalized recs, and every advanced filter.
       </p>
-      <div className="flex items-center justify-between bg-amber-400 text-black px-4 py-2.5 rounded-xl font-bold text-sm">
+      <div className="flex items-center justify-between bg-brand text-black px-4 py-2.5 rounded-xl font-bold text-sm">
         <span className="flex items-center gap-1.5">
           <Sparkles size={13} /> Try Pro free
         </span>
@@ -241,10 +241,10 @@ function SignInView({ onSubmit }: { onSubmit: (email: string) => void }) {
         </form>
 
         {/* Founder mention */}
-        <div className="mt-8 px-4 py-3 rounded-2xl bg-surface-card border border-amber-500/30 text-center">
+        <div className="mt-8 px-4 py-3 rounded-2xl bg-surface-card border border-brand/30 text-center">
           <div className="inline-flex items-center gap-1.5 mb-1">
-            <Crown size={11} className="text-amber-400" />
-            <span className="text-[10px] font-black tracking-widest uppercase text-amber-400">
+            <Crown size={11} className="text-brand" />
+            <span className="text-[10px] font-black tracking-widest uppercase text-brand">
               Founder Pricing
             </span>
           </div>

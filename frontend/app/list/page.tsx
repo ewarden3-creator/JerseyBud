@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 const REC_META = {
   buy_now: { label: "Buy Now", icon: Zap,           color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
-  wait:    { label: "Wait",    icon: Clock,         color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/30" },
+  wait:    { label: "Wait",    icon: Clock,         color: "text-brand",   bg: "bg-brand/10",   border: "border-brand/30" },
   neutral: { label: "Steady",  icon: TrendingDown,  color: "text-zinc-400",    bg: "bg-zinc-500/10",    border: "border-zinc-500/30" },
 } as const;
 
@@ -35,9 +35,9 @@ const OVERALL_META = {
     label: "Hold a Few Days",
     headline: "A drop is likely soon",
     icon: Clock,
-    glow: "from-amber-500/40 via-amber-500/10 to-transparent",
-    pill: "bg-amber-500 text-black",
-    accent: "text-amber-400",
+    glow: "from-brand/40 via-brand/10 to-transparent",
+    pill: "bg-brand text-black",
+    accent: "text-brand",
   },
   neutral: {
     label: "Mixed Signals",
@@ -144,7 +144,7 @@ export default function ShoppingListPage() {
                 )}
               </div>
             ) : (
-              <Link href="/upgrade" className="block mt-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 p-4 hover:border-amber-500/70 transition-colors">
+              <Link href="/upgrade" className="block mt-5 rounded-2xl bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 p-4 hover:border-brand/70 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
                   <ProBadge />
                   <span className="text-xs text-zinc-400 ml-auto">{list.items.length} items tracked</span>
@@ -153,7 +153,7 @@ export default function ShoppingListPage() {
                 <p className="text-xs text-zinc-400 leading-relaxed">
                   Pro analyzes price history per item and tells you when to strike — like flight tracking, for weed.
                 </p>
-                <p className="text-xs font-bold text-amber-400 mt-2 flex items-center gap-1">
+                <p className="text-xs font-bold text-brand mt-2 flex items-center gap-1">
                   Unlock predictive pricing →
                 </p>
               </Link>

@@ -33,14 +33,14 @@ export default function MyReviewsPage() {
       </div>
 
       {/* Credit progress card */}
-      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 p-5">
+      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Award size={16} className="text-amber-400" />
-          <span className="text-xs font-black tracking-widest uppercase text-amber-400">
+          <Award size={16} className="text-brand" />
+          <span className="text-xs font-black tracking-widest uppercase text-brand">
             Free Month Tracker
           </span>
           {earnedFreeMonths > 0 && (
-            <span className="ml-auto text-xs font-bold text-amber-400">
+            <span className="ml-auto text-xs font-bold text-brand">
               {earnedFreeMonths} earned
             </span>
           )}
@@ -56,7 +56,7 @@ export default function MyReviewsPage() {
             </p>
           </div>
           {!isPro(auth) && (
-            <Link href="/upgrade" className="text-xs font-bold text-amber-400 flex items-center gap-1">
+            <Link href="/upgrade" className="text-xs font-bold text-brand flex items-center gap-1">
               Why? <ChevronRight size={11} />
             </Link>
           )}
@@ -65,7 +65,7 @@ export default function MyReviewsPage() {
         {/* Progress bar */}
         <div className="h-2 bg-surface-elevated rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
+            className="h-full bg-gradient-to-r from-brand to-brand rounded-full transition-all"
             style={{ width: `${(progress / REVIEWS_PER_FREE_MONTH) * 100}%` }}
           />
         </div>
@@ -78,7 +78,7 @@ export default function MyReviewsPage() {
       {/* Stats strip */}
       <div className="mx-4 mb-4 grid grid-cols-3 gap-2">
         <Stat label="Total" value={MOCK_REVIEWS.length} />
-        <Stat label="Avg rating" value={(MOCK_REVIEWS.reduce((s, r) => s + r.rating, 0) / MOCK_REVIEWS.length).toFixed(1)} accent="text-amber-400" />
+        <Stat label="Avg rating" value={(MOCK_REVIEWS.reduce((s, r) => s + r.rating, 0) / MOCK_REVIEWS.length).toFixed(1)} accent="text-brand" />
         <Stat label="Credits earned" value={`$${(eligibleCount * 1.75).toFixed(0)}`} accent="text-emerald-400" />
       </div>
 
@@ -97,7 +97,7 @@ export default function MyReviewsPage() {
                     <Star
                       key={n}
                       size={11}
-                      className={n <= r.rating ? "text-amber-400" : "text-zinc-700"}
+                      className={n <= r.rating ? "text-brand" : "text-zinc-700"}
                       fill={n <= r.rating ? "currentColor" : "none"}
                     />
                   ))}
@@ -105,7 +105,7 @@ export default function MyReviewsPage() {
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed line-clamp-2">{r.body}</p>
               {r.credit_eligible && (
-                <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-amber-400">
+                <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-brand">
                   <Award size={10} /> Credit eligible
                 </div>
               )}

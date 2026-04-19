@@ -119,7 +119,7 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
           {/* Range bar */}
           <div className="relative h-2 bg-surface-elevated rounded-full overflow-hidden">
             <div
-              className="absolute h-full bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full"
+              className="absolute h-full bg-gradient-to-r from-emerald-500 to-brand rounded-full"
               style={{
                 left: "0%",
                 width: `${((medianForWeight.median_price - medianForWeight.min_price) / (medianForWeight.max_price - medianForWeight.min_price)) * 100}%`,
@@ -279,14 +279,14 @@ function PriceHistoryTab({ history, weight }: { history: PriceHistoryPoint[] | u
     return (
       <Link
         href="/upgrade"
-        className="block bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 rounded-2xl p-6 text-center hover:border-amber-500/70 transition-colors"
+        className="block bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 rounded-2xl p-6 text-center hover:border-brand/70 transition-colors"
       >
-        <Lock size={20} className="text-amber-400 mx-auto mb-2" />
+        <Lock size={20} className="text-brand mx-auto mb-2" />
         <p className="text-sm font-bold text-white mb-1">Price history is a Pro feature</p>
         <p className="text-xs text-zinc-400 mb-3">
           See the full 90-day price chart, sale dots, and the median benchmark line.
         </p>
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand">
           Unlock price chart →
         </span>
       </Link>
@@ -344,16 +344,16 @@ function LabDataTab({ labHistory }: { labHistory: LabHistoryEntry[] | undefined 
       {hiddenCount > 0 && (
         <Link
           href="/upgrade"
-          className="block bg-gradient-to-br from-amber-500/15 via-surface-card to-surface-card border border-amber-500/40 rounded-2xl p-5 text-center hover:border-amber-500/70 transition-colors"
+          className="block bg-gradient-to-br from-brand/15 via-surface-card to-surface-card border border-brand/40 rounded-2xl p-5 text-center hover:border-brand/70 transition-colors"
         >
-          <Lock size={18} className="text-amber-400 mx-auto mb-2" />
+          <Lock size={18} className="text-brand mx-auto mb-2" />
           <p className="text-sm font-bold text-white mb-1">
             {hiddenCount} previous batch{hiddenCount > 1 ? "es" : ""} archived
           </p>
           <p className="text-xs text-zinc-400 mb-3">
             Compare lab data across every batch this strain has shipped — only on Pro.
           </p>
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand">
             Unlock batch archive →
           </span>
         </Link>
