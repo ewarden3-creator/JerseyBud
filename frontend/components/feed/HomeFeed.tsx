@@ -3,12 +3,14 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, Search, Mic, ChevronDown, RefreshCw } from "lucide-react";
+import { Sparkles, Search, Mic, ChevronDown, RefreshCw, Store, Globe2 } from "lucide-react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
+import { useShopPreference } from "@/hooks/useShopPreference";
 import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { SearchSheet } from "@/components/ui/SearchSheet";
+import { ShopPicker } from "@/components/ui/ShopPicker";
 import { cn } from "@/lib/utils";
 
 const QUICK_INTENTS = [
@@ -42,24 +44,33 @@ const SORT_OPTIONS = [
 
 export function HomeFeed() {
   const { lat, lng } = useLocation();
+  const { slug: preferredShopSlug, set: setPreferredShop } = useShopPreference();
   const [searchOpen, setSearchOpen] = useState(false);
   const [seedQuery, setSeedQuery] = useState<string | null>(null);
+  const [shopPickerOpen, setShopPickerOpen] = useState(false);
   const [category, setCategory] = useState<string>("flower");
   const [productType, setProductType] = useState<string | null>(null);
   const [onSale, setOnSale] = useState(false);
   const [sort, setSort] = useState<string>("price_per_gram");
   const [showSortMenu, setShowSortMenu] = useState(false);
 
+  // Resolve shop name for the indicator (only fetches when set)
+  const { data: preferredShop } = useSWR(
+    preferredShopSlug ? ["shop", preferredShopSlug] : null,
+    () => api.dispensary(preferredShopSlug!)
+  );
+
   // Build query params for the inventory fetch
   const params: Record<string, string> = useMemo(() => {
     const p: Record<string, string> = { sort, limit: "60" };
+    if (preferredShopSlug) p.dispensary_slug = preferredShopSlug;
     if (category) p.category = category;
     if (productType) p.product_type = productType;
     if (onSale) p.on_sale = "true";
     if (lat) p.lat = String(lat);
     if (lng) p.lng = String(lng);
     return p;
-  }, [category, productType, onSale, sort, lat, lng]);
+  }, [preferredShopSlug, category, productType, onSale, sort, lat, lng]);
 
   const { data: products, isLoading, mutate } = useSWR(
     ["inventory", params],
@@ -76,6 +87,31 @@ export function HomeFeed() {
 
   return (
     <div className="min-h-screen bg-surface pb-32">
+      {/* Shop context indicator — primary scoping filter, persistent across visits */}
+      <div className="px-5 pt-4">
+        <button
+          onClick={() => setShopPickerOpen(true)}
+          className="w-full flex items-center gap-3 bg-surface-card border border-surface-border hover:border-brand/40 rounded-2xl px-4 py-3 transition-colors text-left"
+        >
+          <div className="w-9 h-9 rounded-xl bg-surface-elevated flex items-center justify-center flex-shrink-0">
+            {preferredShopSlug ? (
+              <Store size={15} className="text-brand" />
+            ) : (
+              <Globe2 size={15} className="text-zinc-400" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">
+              Shopping at
+            </p>
+            <p className="text-sm font-bold text-white truncate">
+              {preferredShop ? preferredShop.name : "All NJ shops"}
+            </p>
+          </div>
+          <ChevronDown size={14} className="text-zinc-500 flex-shrink-0" />
+        </button>
+      </div>
+
       {/* AI concierge — the prominent entry to the assistant */}
       <div className="px-5 pt-4 pb-3">
         <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-2">
@@ -228,6 +264,13 @@ export function HomeFeed() {
         open={searchOpen}
         onClose={() => { setSearchOpen(false); setSeedQuery(null); }}
         initialQuery={seedQuery}
+      />
+
+      <ShopPicker
+        open={shopPickerOpen}
+        onClose={() => setShopPickerOpen(false)}
+        selectedSlug={preferredShopSlug}
+        onSelect={setPreferredShop}
       />
     </div>
   );

@@ -129,6 +129,7 @@ export const api = {
 
 function filterMockProducts(params: Record<string, string>): ProductOut[] {
   let out = [...mock.products];
+  if (params.dispensary_slug) out = out.filter((p) => p.dispensary.slug === params.dispensary_slug);
   if (params.category) out = out.filter((p) => p.category === params.category);
   if (params.product_type) out = out.filter((p) => p.product_type === params.product_type);
   if (params.on_sale === "true") out = out.filter((p) => p.is_on_sale);
