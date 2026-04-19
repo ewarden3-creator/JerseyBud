@@ -1,23 +1,36 @@
-// Single source of truth for terpene colors. Used by the donut, the pills,
-// the legend — everywhere a terpene appears, it gets the same color.
-// Palette is brand-cohesive: saturated but not chaotic, 6 distinct hues.
+// Tightened terpene palette — built around the brand teal family with
+// 2 warm accents + 1 floral. Looks intentional, not scattershot.
+//
+// Family breakdown:
+//   Cool (brand-aligned greens & teals): caryophyllene, pinene, humulene,
+//     terpinolene, ocimene, nerolidol — these dominate most strain blooms
+//   Warm accents (sparingly): myrcene (amber), limonene (gold), bisabolol (coral)
+//   Floral: linalool (lavender) — one purple accent for floral terps
+//
+// Result: most blooms read as "brand-greens with one or two warm pops" instead
+// of a confused rainbow. Distinct enough to read, tight enough to feel branded.
 
 export const TERPENE_COLOR: Record<string, string> = {
-  // Common 6 — most strains have these
-  myrcene:        "#F97316",   // orange · earthy, sedating
-  caryophyllene:  "#A78BFA",   // lavender · peppery, spicy
-  limonene:       "#FBBF24",   // gold · citrus, uplifting
-  pinene:         "#34D399",   // mint · pine, focused
-  linalool:       "#F472B6",   // pink · floral, calming
-  humulene:       "#FB923C",   // copper · hoppy, earthy
-  // Less common
-  terpinolene:    "#06B6D4",   // cyan · fresh, herbal
-  ocimene:        "#84CC16",   // lime · sweet, woody
-  bisabolol:      "#FB7185",   // rose · chamomile, soothing
-  valencene:      "#FACC15",   // yellow · sweet, tropical
-  nerolidol:      "#22D3EE",   // sky · woody, floral
-  geraniol:       "#FB7185",   // rose · floral, sweet
-  camphene:       "#94A3B8",   // gray · woodsy
+  // Warm accents — stand out, used for the most-common dominant terpenes
+  myrcene:        "#F59E0B",   // warm amber · earthy/sedating
+  limonene:       "#FBBF24",   // golden · citrus/uplifting
+  bisabolol:      "#FB7185",   // coral · chamomile/soothing
+
+  // Brand-cool family — greens & teals (the bulk of the palette)
+  caryophyllene:  "#0D9488",   // deep teal · peppery
+  pinene:         "#10B981",   // emerald · pine/focused
+  humulene:       "#65A30D",   // olive · hoppy/earthy
+  terpinolene:    "#2DD4BF",   // brand teal · fresh/herbal
+  ocimene:        "#5EEAD4",   // mint · sweet/woody
+  nerolidol:      "#0EA5E9",   // sky · woody/floral
+  valencene:      "#22C55E",   // grass green · sweet/tropical
+
+  // Floral — one purple accent
+  linalool:       "#A78BFA",   // lavender · floral/calming
+  geraniol:       "#C084FC",   // lighter purple · floral/sweet
+
+  // Neutral fallbacks
+  camphene:       "#94A3B8",   // slate · woodsy
 };
 
 const FALLBACK = "#71717A";
