@@ -246,7 +246,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               cbdPct={product.cbd_pct}
               size={180}
               maxSegments={6}
-              showLabels
             />
             <div className="mt-4 pt-4 border-t border-surface-border w-full">
               <TerpeneLegend terpenes={product.terpenes!} max={8} />
