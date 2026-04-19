@@ -6,7 +6,7 @@ import { Heart, Package, Sparkles, MapPin } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useDeviceId } from "@/hooks/useDeviceId";
-import { ProductCard } from "@/components/product/ProductCard";
+import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { cn } from "@/lib/utils";
 
 type Tab = "all" | "product" | "strain" | "dispensary";
@@ -66,7 +66,7 @@ export default function FavoritesPage() {
           if (f.product) {
             return (
               <div key={f.id} className="relative">
-                <ProductCard product={f.product} isFavorited onFavorite={() => remove(f.id)} />
+                <ProductCardCompact product={f.product} isFavorited />
               </div>
             );
           }

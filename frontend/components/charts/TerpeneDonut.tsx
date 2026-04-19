@@ -1,135 +1,151 @@
 "use client";
 
-// Terpene donut wheel — overlaid on product hero image.
-// Segments are proportional to each terpene's % value.
-// Consistent color per terpene across the entire app.
+// The single canonical visualization for a strain.
+// Donut shows top 3 terpenes as colored segments (proportional).
+// Center shows THC % (or CBD% if CBD-dominant).
+// Same colors used in the matching <TerpenePill /> and <TerpeneLegend />.
 
-const TERPENE_COLORS: Record<string, string> = {
-  myrcene:              "#F97316",
-  "beta myrcene":       "#F97316",
-  beta_myrcene:         "#F97316",
-  caryophyllene:        "#8B5CF6",
-  "beta caryophyllene": "#8B5CF6",
-  beta_caryophyllene:   "#8B5CF6",
-  limonene:             "#EAB308",
-  "alpha pinene":       "#22C55E",
-  alpha_pinene:         "#22C55E",
-  "beta pinene":        "#16A34A",
-  beta_pinene:          "#16A34A",
-  linalool:             "#EC4899",
-  "alpha humulene":     "#A78BFA",
-  alpha_humulene:       "#A78BFA",
-  terpinolene:          "#06B6D4",
-  ocimene:              "#84CC16",
-  "alpha bisabolol":    "#F472B6",
-  alpha_bisabolol:      "#F472B6",
-  valencene:            "#FB923C",
-  nerolidol:            "#34D399",
-  geraniol:             "#FBBF24",
-  camphene:             "#94A3B8",
-  guaiol:               "#67E8F9",
-};
+import { terpColor, friendlyTerp } from "@/lib/terpeneColors";
+import { cn } from "@/lib/utils";
 
-function getTerpColor(name: string): string {
-  return TERPENE_COLORS[name.toLowerCase()] ?? "#6B7280";
-}
-
-interface Props {
-  terpenes: Record<string, number>;
-  totalPct: number | null;
+interface DonutProps {
+  terpenes: Record<string, number> | null;
+  thcPct: number | null;
+  cbdPct?: number | null;
   size?: number;
+  /** Show terpene labels around the perimeter (only readable at large sizes) */
+  showLabels?: boolean;
+  className?: string;
 }
 
-export function TerpeneDonut({ terpenes, totalPct, size = 100 }: Props) {
-  const entries = Object.entries(terpenes)
+export function TerpeneDonut({
+  terpenes, thcPct, cbdPct = null, size = 110, showLabels = false, className,
+}: DonutProps) {
+  const top3 = Object.entries(terpenes ?? {})
     .filter(([, v]) => v > 0)
-    .sort(([, a], [, b]) => b - a);
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
 
-  if (entries.length === 0) return null;
-
-  const total = entries.reduce((s, [, v]) => s + v, 0);
   const cx = size / 2;
   const cy = size / 2;
   const r = size * 0.42;
-  const innerR = size * 0.27;
-  const gap = 0.03; // radians gap between segments
+  const strokeWidth = size * 0.16;
 
-  // Build SVG arc paths
-  let angle = -Math.PI / 2;
-  const segments = entries.map(([name, val]) => {
-    const sweep = (val / total) * (Math.PI * 2) - gap;
-    const x1 = cx + r * Math.cos(angle);
-    const y1 = cy + r * Math.sin(angle);
-    const x2 = cx + r * Math.cos(angle + sweep);
-    const y2 = cy + r * Math.sin(angle + sweep);
-    const ix1 = cx + innerR * Math.cos(angle);
-    const iy1 = cy + innerR * Math.sin(angle);
-    const ix2 = cx + innerR * Math.cos(angle + sweep);
-    const iy2 = cy + innerR * Math.sin(angle + sweep);
-    const large = sweep > Math.PI ? 1 : 0;
-    const d = [
-      `M ${x1} ${y1}`,
-      `A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
-      `L ${ix2} ${iy2}`,
-      `A ${innerR} ${innerR} 0 ${large} 0 ${ix1} ${iy1}`,
-      "Z",
-    ].join(" ");
-    angle += sweep + gap;
-    return { name, val, d, color: getTerpColor(name) };
+  // Center label
+  const isCbdDominant = (cbdPct ?? 0) > (thcPct ?? 0) * 0.5;
+  const centerNum = isCbdDominant ? cbdPct : thcPct;
+  const centerLabel = isCbdDominant ? "CBD" : "THC";
+
+  // If no terps, just draw a soft brand ring with the THC % inside
+  if (top3.length === 0) {
+    return (
+      <div className={cn("relative", className)} style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#27272A" strokeWidth={strokeWidth} />
+          {centerNum != null && <CenterLabel size={size} cx={cx} cy={cy} num={centerNum} label={centerLabel} />}
+        </svg>
+      </div>
+    );
+  }
+
+  // Build segments with small gaps
+  const total = top3.reduce((s, [, v]) => s + v, 0);
+  const circumference = 2 * Math.PI * r;
+  const gap = 4; // pixels between segments
+
+  let cumulative = 0;
+  const segments = top3.map(([name, val]) => {
+    const pct = val / total;
+    const segLen = pct * circumference - gap;
+    const offset = cumulative;
+    cumulative += pct * circumference;
+    return {
+      name,
+      val,
+      color: terpColor(name),
+      strokeDasharray: `${segLen} ${circumference - segLen}`,
+      strokeDashoffset: -offset,
+    };
   });
 
-  const label = totalPct != null
-    ? `${totalPct.toFixed(2)}%`
-    : `${total.toFixed(2)}%`;
-
-  const fontSize = size * 0.13;
-
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      aria-label={`Terpene profile: ${entries.map(([n, v]) => `${n} ${v}%`).join(", ")}`}
-    >
-      {segments.map((seg) => (
-        <path key={seg.name} d={seg.d} fill={seg.color} opacity={0.95} />
-      ))}
-      {/* inner dark circle */}
-      <circle cx={cx} cy={cy} r={innerR - 1} fill="#141414" />
-      <text
-        x={cx}
-        y={cy + fontSize * 0.35}
-        textAnchor="middle"
-        fontSize={fontSize}
-        fontWeight="700"
-        fill="white"
-        fontFamily="system-ui"
+    <div className={cn("relative inline-block", className)} style={{ width: size, height: size }}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ transform: "rotate(-90deg)" }}
       >
-        {label}
-      </text>
-    </svg>
+        {/* Track */}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1F1F23" strokeWidth={strokeWidth} />
+        {/* Segments */}
+        {segments.map((seg) => (
+          <circle
+            key={seg.name}
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={seg.strokeDasharray}
+            strokeDashoffset={seg.strokeDashoffset}
+            strokeLinecap="butt"
+          />
+        ))}
+      </svg>
+      {/* Center label — outside SVG so we don't fight rotation */}
+      {centerNum != null && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none leading-none"
+          style={{ fontSize: size * 0.32 }}
+        >
+          <span className="font-display font-black text-white" style={{ fontSize: size * 0.32 }}>
+            {centerNum.toFixed(0)}<span style={{ fontSize: size * 0.14 }}>%</span>
+          </span>
+          <span className="text-zinc-500 font-bold uppercase tracking-wider mt-0.5"
+            style={{ fontSize: size * 0.09 }}>
+            {centerLabel}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
-// Legend strip for product detail page
-export function TerpeneLegend({ terpenes }: { terpenes: Record<string, number> }) {
+function CenterLabel({ size, cx, cy, num, label }: { size: number; cx: number; cy: number; num: number; label: string }) {
+  return (
+    <>
+      <text x={cx} y={cy + size * 0.04} textAnchor="middle" fill="white" fontWeight="900" fontSize={size * 0.26}>
+        {num.toFixed(0)}%
+      </text>
+      <text x={cx} y={cy + size * 0.18} textAnchor="middle" fill="#71717A" fontWeight="700" fontSize={size * 0.09} letterSpacing={1}>
+        {label}
+      </text>
+    </>
+  );
+}
+
+// ---------- Companion: terpene legend ----------
+// Use anywhere we want to expose what's in the donut. Same colors.
+
+export function TerpeneLegend({ terpenes, max = 6 }: { terpenes: Record<string, number>; max?: number }) {
   const entries = Object.entries(terpenes)
     .filter(([, v]) => v > 0)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 6);
+    .slice(0, max);
 
   return (
     <div className="flex flex-wrap gap-2">
       {entries.map(([name, val]) => (
-        <div key={name} className="flex items-center gap-1.5">
+        <div
+          key={name}
+          className="flex items-center gap-1.5 bg-surface-elevated border border-surface-border px-2 py-1 rounded-pill"
+        >
           <span
-            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: getTerpColor(name) }}
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: terpColor(name) }}
           />
-          <span className="text-xs text-zinc-300 capitalize">
-            {name.replace(/_/g, " ")}
-          </span>
-          <span className="text-xs text-zinc-500">{val.toFixed(2)}%</span>
+          <span className="text-xs text-white font-semibold">{friendlyTerp(name)}</span>
+          <span className="text-[10px] text-zinc-500">{val.toFixed(2)}%</span>
         </div>
       ))}
     </div>

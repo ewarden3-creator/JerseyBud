@@ -7,9 +7,8 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
-import { TerpeneLegend } from "@/components/charts/TerpeneDonut";
+import { TerpeneDonut, TerpeneLegend } from "@/components/charts/TerpeneDonut";
 import { EffectsRadar } from "@/components/charts/EffectsRadar";
-import { PotencyTile } from "@/components/product/PotencyTile";
 import { PriceHistoryChart } from "@/components/charts/PriceHistoryChart";
 import { CannabinoidBars } from "@/components/charts/CannabinoidBars";
 import { directionsUrl, productHandoffUrl, handoffLabel } from "@/lib/handoff";
@@ -84,16 +83,16 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
         )}
       </div>
 
-      {/* Potency tile + cannabinoid breakdown — the data, plainly */}
+      {/* Big donut + matching color-coded terpene pills.
+          Side-by-side so the visual language teaches itself. */}
       {latestLab && (
         <div className="mx-4 mb-4 bg-surface-card border border-surface-border rounded-2xl p-5">
-          <div className="flex gap-4 items-center">
-            <PotencyTile
-              productType={null}
+          <div className="flex gap-5 items-center">
+            <TerpeneDonut
+              terpenes={latestLab.terpenes}
               thcPct={latestLab.thc_pct}
               cbdPct={latestLab.cbd_pct}
-              terpenes={latestLab.terpenes}
-              size={120}
+              size={140}
             />
             <div className="flex-1 min-w-0">
               {latestLab.terpenes && Object.keys(latestLab.terpenes).length > 0 && (
@@ -104,7 +103,6 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
               )}
             </div>
           </div>
-          {/* Effects */}
           <div className="mt-5 pt-4 border-t border-surface-border">
             <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">Common effects</p>
             <EffectsRadar effects={["relaxed", "happy", "euphoric"]} size={160} />

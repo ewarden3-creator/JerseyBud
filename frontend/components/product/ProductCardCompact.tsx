@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Heart } from "lucide-react";
 import { CannabinoidStrip } from "@/components/charts/CannabinoidStrip";
-import { PotencyTile } from "@/components/product/PotencyTile";
+import { TerpeneDonut } from "@/components/charts/TerpeneDonut";
+import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
 import { useDeviceId } from "@/hooks/useDeviceId";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -59,19 +60,27 @@ export function ProductCardCompact({ product, isFavorited }: Props) {
         className="bg-surface-card rounded-2xl border border-surface-border overflow-hidden active:border-brand/40 transition-colors"
       >
         <div className="flex gap-3 p-3">
-          {/* Potency tile — type-coded, big THC%, dominant terp label.
-              Reads instantly without needing a legend. */}
-          <div className="flex-shrink-0 relative">
-            <PotencyTile
-              productType={product.product_type}
-              thcPct={product.thc_pct}
-              cbdPct={product.cbd_pct}
-              terpenes={product.terpenes}
-              size={110}
-            />
-            {/* Sale chevron in the tile corner */}
+          {/* Terpene donut — top 3 terpenes as colored arcs, THC% in center.
+              Same colors used in the legend pills below the card → user learns
+              the visual language by seeing both side-by-side. */}
+          <div className="flex-shrink-0 relative w-[110px] h-[110px] flex items-center justify-center">
+            {product.terpenes && Object.keys(product.terpenes).length > 0 ? (
+              <TerpeneDonut
+                terpenes={product.terpenes}
+                thcPct={product.thc_pct}
+                cbdPct={product.cbd_pct}
+                size={110}
+              />
+            ) : (
+              <ProductPlaceholder
+                productType={product.product_type}
+                strainName={product.strain_name}
+                className="w-full h-full rounded-xl"
+              />
+            )}
+            {/* Sale chevron */}
             {product.is_on_sale && product.sale_pct_off && (
-              <div className="absolute top-1 right-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded z-10">
+              <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded z-10">
                 −{product.sale_pct_off.toFixed(0)}%
               </div>
             )}

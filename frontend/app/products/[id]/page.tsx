@@ -11,8 +11,7 @@ import {
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { directionsUrl } from "@/lib/handoff";
-import { TerpeneLegend } from "@/components/charts/TerpeneDonut";
-import { PotencyTile } from "@/components/product/PotencyTile";
+import { TerpeneDonut, TerpeneLegend } from "@/components/charts/TerpeneDonut";
 import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
 import { HandoffButton, DispensaryDirectionsButton } from "@/components/ui/HandoffButtons";
 import { QuickActions, TasteWarning } from "@/components/product/QuickActions";
@@ -102,16 +101,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       {/* Info section overlapping the hero */}
       <div className="px-4 -mt-16 relative z-10">
         <div className="bg-surface-card border border-surface-border rounded-3xl p-5">
-          {/* Potency tile + name + type — same module as the cards, larger */}
+          {/* Donut + name + type */}
           <div className="flex items-start gap-4 mb-3">
             <div className="flex-shrink-0">
-              <PotencyTile
-                productType={product.product_type}
-                thcPct={product.thc_pct}
-                cbdPct={product.cbd_pct}
-                terpenes={product.terpenes}
-                size={88}
-              />
+              {hasTerpenes ? (
+                <TerpeneDonut
+                  terpenes={product.terpenes}
+                  thcPct={product.thc_pct}
+                  cbdPct={product.cbd_pct}
+                  size={96}
+                />
+              ) : (
+                <div className="w-[96px] h-[96px] rounded-full bg-surface-elevated flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="font-display font-black text-2xl text-white">{product.thc_pct?.toFixed(0)}%</p>
+                    <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">THC</p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
