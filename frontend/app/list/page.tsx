@@ -65,8 +65,8 @@ export default function ShoppingListPage() {
             {itemCount} item{itemCount === 1 ? "" : "s"}
           </span>
         </div>
-        <p className="text-xs text-zinc-500">
-          We're tracking these prices and showing you the cheapest pickup nearby.
+        <p className="text-sm text-zinc-400 leading-snug">
+          Add what you're looking to pick up. We'll tell you which nearby shop has the best <span className="text-white font-semibold">out-the-door price</span> for the whole list.
         </p>
       </div>
 

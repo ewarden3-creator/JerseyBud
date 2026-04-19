@@ -104,26 +104,28 @@ export function TerpeneDonut({
           />
         ))}
       </svg>
-      {/* Center label — outside SVG so we don't fight rotation */}
+      {/* Center label — outside SVG so we don't fight rotation.
+          Number + % are the same size (proper typography); "THC" label below
+          carries the unit context with low visual weight. */}
       {centerNum != null && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="flex items-baseline gap-[1px] leading-none">
+          <div className="flex items-baseline leading-none">
             <span
               className="font-sans font-bold text-white tabular-nums"
-              style={{ fontSize: size * 0.22, lineHeight: 1 }}
+              style={{ fontSize: size * 0.26, lineHeight: 1 }}
             >
               {centerNum.toFixed(0)}
             </span>
             <span
-              className="font-sans font-semibold text-zinc-500"
-              style={{ fontSize: size * 0.11, lineHeight: 1 }}
+              className="font-sans font-bold text-zinc-500 tabular-nums"
+              style={{ fontSize: size * 0.26, lineHeight: 1 }}
             >
               %
             </span>
           </div>
           <span
-            className="text-zinc-500 font-semibold uppercase tracking-wider mt-1"
-            style={{ fontSize: size * 0.08, lineHeight: 1, letterSpacing: "0.08em" }}
+            className="text-zinc-500 font-semibold uppercase mt-[3px]"
+            style={{ fontSize: size * 0.075, lineHeight: 1, letterSpacing: "0.12em" }}
           >
             {centerLabel}
           </span>
