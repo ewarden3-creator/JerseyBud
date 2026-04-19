@@ -53,7 +53,7 @@ export function BrandPassPrompt({ open, brandName, productCount, onClose }: Prop
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center"
+          className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end justify-center"
           onClick={onClose}
         >
           <motion.div
