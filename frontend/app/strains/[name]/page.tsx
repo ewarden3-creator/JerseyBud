@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import { use } from "react";
-import { ArrowLeft, MapPin, Scale, TrendingDown } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowLeft, MapPin, Scale, TrendingDown, List, Map as MapIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
+
+// Heatmap is leaflet-based — must be client-only
+const StrainHeatmap = dynamic(
+  () => import("@/components/map/StrainHeatmap").then((m) => m.StrainHeatmap),
+  { ssr: false, loading: () => <div className="h-[400px] bg-surface-elevated rounded-2xl animate-pulse" /> }
+);
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { TerpeneDonut, TerpeneLegend } from "@/components/charts/TerpeneDonut";
@@ -26,6 +33,7 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
   const { lat, lng } = useLocation();
   const [selectedWeight, setSelectedWeight] = useState("3.5g");
   const [activeTab, setActiveTab] = useState<"compare" | "lab" | "history">("compare");
+  const [compareView, setCompareView] = useState<"list" | "map">("list");
 
   const locParams: Record<string, string> = lat ? { lat: String(lat), lng: String(lng) } : {};
 
@@ -184,9 +192,43 @@ export default function StrainPage({ params }: { params: Promise<{ name: string 
       <div className="px-4">
         {/* Compare tab — same strain at every dispensary */}
         {activeTab === "compare" && (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* List / Map toggle */}
+            <div className="flex bg-surface-elevated rounded-pill p-1 w-fit">
+              <button
+                onClick={() => setCompareView("list")}
+                className={cn(
+                  "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-pill transition-colors",
+                  compareView === "list" ? "bg-brand text-black" : "text-zinc-400"
+                )}
+              >
+                <List size={11} /> List
+              </button>
+              <button
+                onClick={() => setCompareView("map")}
+                className={cn(
+                  "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-pill transition-colors",
+                  compareView === "map" ? "bg-brand text-black" : "text-zinc-400"
+                )}
+              >
+                <MapIcon size={11} /> Heatmap
+              </button>
+            </div>
+
             {!comparisons && <p className="text-zinc-500 text-sm py-4">Loading…</p>}
-            {comparisons?.map((c, i) => {
+
+            {/* Heatmap view */}
+            {compareView === "map" && comparisons && (
+              <StrainHeatmap
+                comparisons={comparisons}
+                selectedWeight={selectedWeight}
+                userLat={lat}
+                userLng={lng}
+              />
+            )}
+
+            {/* List view (default) */}
+            {compareView === "list" && comparisons?.map((c, i) => {
               const entry = c.pricing.find((p) => p.weight === selectedWeight);
 
               // Build hand-off URL inline — we have the bare bones from PriceCompareEntry

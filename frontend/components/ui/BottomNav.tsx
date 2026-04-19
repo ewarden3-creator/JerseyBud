@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, ShoppingBasket } from "lucide-react";
+import { Home, ShoppingBasket, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Three tabs only — the highest-traffic destinations.
+// Map is contextual now (lives on the strain page as a heatmap toggle).
+// Dispensary directory + Brands are reachable via search and detail pages.
 const NAV = [
-  { href: "/",     icon: Home,           label: "Home" },
-  { href: "/map",  icon: Map,            label: "Map"  },
-  { href: "/list", icon: ShoppingBasket, label: "List" },
+  { href: "/",          icon: Home,           label: "Home"  },
+  { href: "/list",      icon: ShoppingBasket, label: "List"  },
+  { href: "/favorites", icon: Heart,          label: "Saved" },
 ];
 
 export function BottomNav() {
