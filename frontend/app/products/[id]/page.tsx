@@ -11,7 +11,8 @@ import {
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { directionsUrl } from "@/lib/handoff";
-import { TerpeneDonut, TerpeneLegend } from "@/components/charts/TerpeneDonut";
+import { TerpeneLegend } from "@/components/charts/TerpeneDonut";
+import { PotencyTile } from "@/components/product/PotencyTile";
 import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
 import { HandoffButton, DispensaryDirectionsButton } from "@/components/ui/HandoffButtons";
 import { QuickActions, TasteWarning } from "@/components/product/QuickActions";
@@ -101,17 +102,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       {/* Info section overlapping the hero */}
       <div className="px-4 -mt-16 relative z-10">
         <div className="bg-surface-card border border-surface-border rounded-3xl p-5">
-          {/* Donut + name + type */}
+          {/* Potency tile + name + type — same module as the cards, larger */}
           <div className="flex items-start gap-4 mb-3">
-            {hasTerpenes && (
-              <div className="flex-shrink-0">
-                <TerpeneDonut
-                  terpenes={product.terpenes!}
-                  totalPct={product.total_terpenes_pct}
-                  size={84}
-                />
-              </div>
-            )}
+            <div className="flex-shrink-0">
+              <PotencyTile
+                productType={product.product_type}
+                thcPct={product.thc_pct}
+                cbdPct={product.cbd_pct}
+                terpenes={product.terpenes}
+                size={88}
+              />
+            </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

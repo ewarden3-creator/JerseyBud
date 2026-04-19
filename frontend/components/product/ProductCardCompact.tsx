@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Heart, Trophy } from "lucide-react";
-import { StrainBloom } from "@/components/charts/StrainBloom";
+import { Heart } from "lucide-react";
 import { CannabinoidStrip } from "@/components/charts/CannabinoidStrip";
-import { ProductPlaceholder } from "@/components/ui/CannabisLeaf";
+import { PotencyTile } from "@/components/product/PotencyTile";
 import { useDeviceId } from "@/hooks/useDeviceId";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -31,8 +30,6 @@ const VALUE_GRADE = (ppg: number | null) => {
 export function ProductCardCompact({ product, isFavorited }: Props) {
   const deviceId = useDeviceId();
   const [favored, setFavored] = useState(isFavorited ?? false);
-
-  const hasTerpenes = product.terpenes && Object.keys(product.terpenes).length > 0;
 
   const bestPricing = product.pricing
     ?.filter((p) => "original_price" in p)
@@ -62,27 +59,19 @@ export function ProductCardCompact({ product, isFavorited }: Props) {
         className="bg-surface-card rounded-2xl border border-surface-border overflow-hidden active:border-brand/40 transition-colors"
       >
         <div className="flex gap-3 p-3">
-          {/* Bloom-as-album-art — fixed-width left column */}
-          <div className="flex-shrink-0 w-[110px] h-[110px] bg-surface-elevated rounded-xl flex items-center justify-center relative overflow-hidden">
-            {hasTerpenes ? (
-              <StrainBloom
-                terpenes={product.terpenes!}
-                thcPct={product.thc_pct}
-                cbdPct={product.cbd_pct}
-                totalTerpenes={null}
-                size={110}
-                showLabels={false}
-              />
-            ) : (
-              <ProductPlaceholder
-                productType={product.product_type}
-                strainName={product.strain_name}
-                className="w-full h-full"
-              />
-            )}
-            {/* Sale chevron in the bloom corner */}
+          {/* Potency tile — type-coded, big THC%, dominant terp label.
+              Reads instantly without needing a legend. */}
+          <div className="flex-shrink-0 relative">
+            <PotencyTile
+              productType={product.product_type}
+              thcPct={product.thc_pct}
+              cbdPct={product.cbd_pct}
+              terpenes={product.terpenes}
+              size={110}
+            />
+            {/* Sale chevron in the tile corner */}
             {product.is_on_sale && product.sale_pct_off && (
-              <div className="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded">
+              <div className="absolute top-1 right-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded z-10">
                 −{product.sale_pct_off.toFixed(0)}%
               </div>
             )}
