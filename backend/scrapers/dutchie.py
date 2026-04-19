@@ -1,484 +1,275 @@
-"""
-Scrapes NJ dispensary menus via Dutchie's public-facing GraphQL API.
-Each NJ dispensary on Dutchie has a public storefront at dutchie.com/dispensary/<slug>
-which loads menu data from their GraphQL endpoint.
+from __future__ import annotations
 
-Fallback chain for dispensary discovery:
-  1. GraphQL dispensaries query (fastest, may require auth or schema drift)
-  2. Sitemap XML parsing (dutchie.com/sitemap-index.xml → dispensary sitemaps)
-  3. Playwright scrape of /dispensaries?state=NJ (JS-rendered, last resort)
+"""
+Dutchie scraper — Playwright-based, hits the live GraphQL JSON endpoint
+through a real browser context. Bypasses Cloudflare.
+
+Pattern (validated 2026-04-19):
+  1. Open Chromium, load dutchie.com to bank session cookies
+  2. Use page.evaluate(fetch(...)) to call GraphQL with persisted-query hashes
+  3. Parse responses into NormalizedDispensary / NormalizedProduct
+
+Hashes were captured from real browser traffic. They're stable across a Dutchie
+release; if Dutchie ships a new client build, the old hashes get rejected and
+we'll need to re-capture (run scripts/test_playwright8.py).
 """
 
-import re
-import xml.etree.ElementTree as ET
-import httpx
-from playwright.async_api import async_playwright
-from tenacity import retry, stop_after_attempt, wait_exponential
-from scrapers.normalizer import normalize_product, NormalizedDispensary, NormalizedProduct
+import asyncio
+import json
+import urllib.parse
+from datetime import date
+from typing import Any
+from playwright.async_api import async_playwright, Page
+
+from scrapers.normalizer import NormalizedDispensary, NormalizedProduct
 
 DUTCHIE_GQL = "https://dutchie.com/graphql"
 
-HEADERS = {
-    "Content-Type": "application/json",
-    "apollographql-client-name": "dutchie-plus",
-    "apollographql-client-version": "1.0.0",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+# NJ bounding box centroid — used to limit search radius
+NJ_CENTER_LAT = 40.0583
+NJ_CENTER_LNG = -74.4057
+NJ_SEARCH_RADIUS_MI = 50
+
+# Persisted query hashes (captured 2026-04-19)
+HASH = {
+    "ConsumerDispensaries": "1a669394db4149fe474f55d0b4eba7850460f6d6e748fb27c206ab335db17f92",
+    "MenuFiltersV2":        "2f0b3233b8a2426b391649ca3f0f7a5d43b9aefd683f6286d7261a2517e3568e",
+    "FilteredProducts":     "98b4aaef79a84ae804b64d550f98dd64d7ba0aa6d836eb6b5d4b2ae815c95e32",
+    "GetMenuSections":      "fb14fcf58d6cdc05ab5957e15ac09591ebac4fbc8784ea8763db2746688b7599",
 }
 
-# GraphQL query to fetch all dispensaries in NJ
-DISPENSARIES_QUERY = """
-query GetDispensariesByState($state: String!) {
-  dispensaries(filter: { state: $state, activeOnly: true }) {
-    id
-    name
-    slug
-    address
-    city
-    state
-    zip
-    phone
-    latitude
-    longitude
-    menuTypes
-    logo
-    licenseNumber
-    openDate
-    retailType
-    featureFlags {
-      delivery
-      curbsidePickup
-      hasAtm
-      isAccessible
-    }
-    hours {
-      monday { open close active }
-      tuesday { open close active }
-      wednesday { open close active }
-      thursday { open close active }
-      friday { open close active }
-      saturday { open close active }
-      sunday { open close active }
-    }
-  }
-}
-"""
-
-# GraphQL query to fetch a dispensary's full menu
-MENU_QUERY = """
-query GetDispensaryMenu($dispensarySlug: String!, $menuType: MenuType!) {
-  dispensaryMenu(dispensarySlug: $dispensarySlug, menuType: $menuType) {
-    products {
-      id
-      name
-      brand {
-        name
-      }
-      strainType
-      category
-      subcategory
-      image
-      effects
-      terpenes {
-        terpene {
-          name
-        }
-        unitSymbol
-        value
-      }
-      cannabinoids {
-        cannabinoid {
-          name
-          description
-        }
-        unit
-        value
-      }
-      batchNumber
-      harvestDate
-      variants {
-        id
-        option
-        priceMed
-        priceRec
-        specialPriceMed
-        specialPriceRec
-        isAvailable
-      }
-      potencyThc {
-        formatted
-        range
-        unit
-      }
-      potencyCbd {
-        formatted
-        range
-        unit
-      }
-    }
-  }
-}
-"""
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-async def _gql(client: httpx.AsyncClient, query: str, variables: dict) -> dict:
-    resp = await client.post(
-        DUTCHIE_GQL,
-        json={"query": query, "variables": variables},
-        headers=HEADERS,
-        timeout=30,
+def _make_url(operation: str, variables: dict, hash_: str) -> str:
+    ext = json.dumps({"persistedQuery": {"version": 1, "sha256Hash": hash_}})
+    return (
+        f"{DUTCHIE_GQL}?operationName={operation}"
+        f"&variables={urllib.parse.quote(json.dumps(variables))}"
+        f"&extensions={urllib.parse.quote(ext)}"
     )
-    resp.raise_for_status()
-    data = resp.json()
-    if "errors" in data:
-        raise ValueError(f"GQL errors: {data['errors']}")
-    return data["data"]
+
+
+async def _gql(page: Page, op: str, variables: dict) -> dict:
+    """Fire a GraphQL request from inside the page context for proper TLS."""
+    url = _make_url(op, variables, HASH[op])
+    js = f"""
+      fetch({json.dumps(url)}, {{
+        method: 'GET',
+        headers: {{
+          'apollographql-client-name': 'consumer-app',
+          'apollographql-client-version': '1.0.0',
+          'content-type': 'application/json'
+        }}
+      }}).then(r => r.text())
+    """
+    raw = await page.evaluate(js)
+    return json.loads(raw)
+
+
+async def _open_session() -> tuple[Any, Any, Page]:
+    """Launch browser, bank Cloudflare clearance. Returns (pw, browser, page)."""
+    pw = await async_playwright().start()
+    browser = await pw.chromium.launch(headless=True)
+    context = await browser.new_context(
+        user_agent=USER_AGENT,
+        viewport={"width": 1280, "height": 900},
+        locale="en-US",
+        timezone_id="America/New_York",
+    )
+    page = await context.new_page()
+    await page.goto("https://dutchie.com/", wait_until="domcontentloaded", timeout=30_000)
+    await page.wait_for_timeout(2500)
+    return pw, browser, page
+
+
+def _is_real_nj_shop(d: dict) -> bool:
+    name = (d.get("name") or "").lower()
+    if any(s in name for s in ("sandbox", "sbx", "(demo", "demo)", "test", "ianthus demo", "dnu")):
+        return False
+    if d.get("status") not in ("open", None):
+        return False
+    state = (d.get("location") or {}).get("state") if isinstance(d.get("location"), dict) else None
+    return state == "NJ" or state is None
 
 
 async def fetch_nj_dispensaries() -> list[NormalizedDispensary]:
-    """Try GQL → sitemap → Playwright, returning first non-empty result."""
-    # 1. GraphQL
+    """Returns all real, open NJ dispensaries currently on Dutchie."""
+    pw, browser, page = await _open_session()
     try:
-        results = await _fetch_via_gql()
-        if results:
-            return results
-    except Exception:
-        pass
-
-    # 2. Sitemap
-    try:
-        results = await _fetch_via_sitemap()
-        if results:
-            return results
-    except Exception:
-        pass
-
-    # 3. Playwright (JS-rendered page)
-    return await _fetch_via_playwright()
-
-
-async def _fetch_via_gql() -> list[NormalizedDispensary]:
-    async with httpx.AsyncClient() as client:
-        data = await _gql(client, DISPENSARIES_QUERY, {"state": "NJ"})
-    return [_gql_dispensary_to_normalized(d) for d in data.get("dispensaries", [])]
-
-
-def _gql_dispensary_to_normalized(d: dict) -> NormalizedDispensary:
-    flags = d.get("featureFlags") or {}
-    hours = _parse_dutchie_hours(d.get("hours"))
-
-    open_date = d.get("openDate", "")
-    opening_year = None
-    if open_date:
-        try:
-            opening_year = int(str(open_date)[:4])
-        except (ValueError, TypeError):
-            pass
-
-    menu_types = [m.upper() for m in (d.get("menuTypes") or [])]
-
-    return NormalizedDispensary(
-        source="dutchie",
-        source_id=d["id"],
-        slug=f"dutchie-{d['slug']}",
-        name=d["name"],
-        address=d.get("address", ""),
-        city=d.get("city", ""),
-        zip_code=d.get("zip", ""),
-        lat=d.get("latitude"),
-        lng=d.get("longitude"),
-        phone=d.get("phone"),
-        website=f"https://dutchie.com/dispensary/{d['slug']}",
-        logo_url=d.get("logo"),
-        nj_license_number=d.get("licenseNumber"),
-        opening_year=opening_year,
-        medical="MEDICAL" in menu_types,
-        recreational="RECREATIONAL" in menu_types,
-        wheelchair_accessible=flags.get("isAccessible"),
-        delivery=flags.get("delivery"),
-        curbside_pickup=flags.get("curbsidePickup"),
-        atm=flags.get("hasAtm"),
-        hours=hours,
-    )
-
-
-def _parse_dutchie_hours(raw: dict | None) -> dict | None:
-    if not raw:
-        return None
-    day_map = {
-        "monday": "mon", "tuesday": "tue", "wednesday": "wed",
-        "thursday": "thu", "friday": "fri", "saturday": "sat", "sunday": "sun",
-    }
-    result = {}
-    for full, short in day_map.items():
-        day = raw.get(full) or {}
-        if not day.get("active"):
-            result[short] = ""
-        else:
-            result[short] = f"{day.get('open', '')} - {day.get('close', '')}"
-    return result
-
-
-async def _fetch_via_sitemap() -> list[NormalizedDispensary]:
-    """
-    Parse Dutchie's sitemap index to find dispensary sub-sitemaps,
-    then filter URLs that contain '/new-jersey/' or state=NJ pattern.
-    For each slug found, hydrate details via the per-dispensary GQL info query.
-    """
-    sitemap_index_url = "https://dutchie.com/sitemap-index.xml"
-    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
-
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        resp = await client.get(sitemap_index_url, headers=HEADERS, timeout=20)
-        resp.raise_for_status()
-        root = ET.fromstring(resp.text)
-
-        # Find sub-sitemap URLs that look like dispensary sitemaps
-        dispensary_sitemap_urls = [
-            loc.text
-            for sm in root.findall("sm:sitemap", ns)
-            if (loc := sm.find("sm:loc", ns)) is not None
-            and "dispensar" in (loc.text or "").lower()
-        ]
-
-        nj_slugs: set[str] = set()
-        for sitemap_url in dispensary_sitemap_urls:
-            try:
-                resp = await client.get(sitemap_url, headers=HEADERS, timeout=20)
-                resp.raise_for_status()
-                sub_root = ET.fromstring(resp.text)
-                for url_el in sub_root.findall("sm:url", ns):
-                    loc = url_el.find("sm:loc", ns)
-                    if loc is None or not loc.text:
-                        continue
-                    # Match URLs like /dispensary/<slug>/new-jersey or ?state=NJ
-                    if _is_nj_dispensary_url(loc.text):
-                        slug = _extract_slug(loc.text)
-                        if slug:
-                            nj_slugs.add(slug)
-            except Exception:
+        data = await _gql(page, "ConsumerDispensaries", {
+            "dispensaryFilter": {
+                "nearLat": NJ_CENTER_LAT,
+                "nearLng": NJ_CENTER_LNG,
+                "distance": NJ_SEARCH_RADIUS_MI,
+            }
+        })
+        all_disps = (data.get("data") or {}).get("filteredDispensaries") or []
+        results: list[NormalizedDispensary] = []
+        for d in all_disps:
+            if not _is_real_nj_shop(d):
                 continue
-
-        if not nj_slugs:
-            return []
-
-        # Hydrate each slug with the per-dispensary info query
-        results = []
-        for slug in nj_slugs:
-            try:
-                nd = await _hydrate_slug(client, slug)
-                if nd:
-                    results.append(nd)
-            except Exception:
-                # Still include a minimal record so we can scrape the menu
-                results.append(NormalizedDispensary(
-                    source="dutchie",
-                    source_id=slug,
-                    slug=f"dutchie-{slug}",
-                    name=slug.replace("-", " ").title(),
-                    address="",
-                    city="",
-                    zip_code="",
-                    website=f"https://dutchie.com/dispensary/{slug}",
-                ))
+            loc = d.get("location") or {}
+            results.append(NormalizedDispensary(
+                source="dutchie",
+                source_id=d["id"],
+                slug=f"dutchie-{d.get('cName')}",
+                name=d.get("name", ""),
+                address=" ".join(filter(None, [loc.get("ln1", ""), loc.get("ln2", "")])).strip(),
+                city=loc.get("city") or "",
+                zip_code=loc.get("zipcode", "") or "",
+                lat=loc.get("geo", {}).get("lat") if isinstance(loc.get("geo"), dict) else None,
+                lng=loc.get("geo", {}).get("lng") if isinstance(loc.get("geo"), dict) else None,
+                phone=d.get("phone"),
+                website=f"https://dutchie.com/dispensary/{d.get('cName')}",
+            ))
         return results
-
-
-def _is_nj_dispensary_url(url: str) -> bool:
-    url_lower = url.lower()
-    return (
-        "dutchie.com/dispensary/" in url_lower
-        and (
-            "/new-jersey" in url_lower
-            or "state=nj" in url_lower
-            or "-nj-" in url_lower
-            or url_lower.endswith("-nj")
-        )
-    )
-
-
-def _extract_slug(url: str) -> str | None:
-    # dutchie.com/dispensary/<slug> or dutchie.com/dispensary/<slug>/new-jersey/...
-    match = re.search(r"dutchie\.com/dispensary/([^/?#]+)", url, re.IGNORECASE)
-    return match.group(1) if match else None
-
-
-DISPENSARY_INFO_QUERY = """
-query GetDispensaryInfo($slug: String!) {
-  dispensary(slug: $slug) {
-    id
-    name
-    slug
-    address
-    city
-    state
-    zip
-    phone
-    latitude
-    longitude
-  }
-}
-"""
-
-
-async def _hydrate_slug(client: httpx.AsyncClient, slug: str) -> NormalizedDispensary | None:
-    data = await _gql(client, DISPENSARY_INFO_QUERY, {"slug": slug})
-    d = data.get("dispensary")
-    if not d:
-        return None
-    return _gql_dispensary_to_normalized(d)
-
-
-async def _fetch_via_playwright() -> list[NormalizedDispensary]:
-    """
-    Last-resort: render dutchie.com/dispensaries with Playwright,
-    intercept the network response that contains the dispensary list JSON,
-    and parse it.
-    """
-    results: list[NormalizedDispensary] = []
-    captured: list[dict] = []
-
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(headless=True)
-        page = await browser.new_page()
-
-        async def handle_response(response):
-            if "dispensaries" in response.url and response.request.method == "POST":
-                try:
-                    body = await response.json()
-                    dispensaries = (
-                        (body.get("data") or {}).get("dispensaries") or []
-                    )
-                    captured.extend(dispensaries)
-                except Exception:
-                    pass
-
-        page.on("response", handle_response)
-        await page.goto(
-            "https://dutchie.com/dispensaries?state=NJ",
-            wait_until="networkidle",
-            timeout=30_000,
-        )
+    finally:
         await browser.close()
-
-    for d in captured:
-        if (d.get("state") or "").upper() == "NJ":
-            results.append(_gql_dispensary_to_normalized(d))
-
-    return results
+        await pw.stop()
 
 
 async def fetch_menu(dispensary_slug: str) -> list[NormalizedProduct]:
     """
-    dispensary_slug here is the raw Dutchie slug (without the 'dutchie-' prefix).
+    dispensary_slug: the cName-prefixed slug (without 'dutchie-' prefix).
+    Returns all in-stock products for the dispensary, normalized.
     """
-    products: list[NormalizedProduct] = []
+    raw_slug = dispensary_slug.removeprefix("dutchie-")
+    pw, browser, page = await _open_session()
+    try:
+        # Step 1: resolve the slug to a real Dutchie ID
+        info = await _gql(page, "ConsumerDispensaries", {
+            "dispensaryFilter": {"cNameOrID": raw_slug}
+        })
+        disps = (info.get("data") or {}).get("filteredDispensaries") or []
+        if not disps:
+            return []
+        dispensary_id = disps[0]["id"]
 
-    async with httpx.AsyncClient() as client:
-        for menu_type in ("RECREATIONAL", "MEDICAL"):
-            try:
-                data = await _gql(client, MENU_QUERY, {
-                    "dispensarySlug": dispensary_slug,
-                    "menuType": menu_type,
-                })
-            except Exception:
-                continue
+        # Step 2: get menu sections to enumerate product IDs
+        sections_data = await _gql(page, "GetMenuSections", {"dispensaryId": dispensary_id})
+        sections = (sections_data.get("data") or {}).get("getMenuSections") or []
 
-            raw_products = (data.get("dispensaryMenu") or {}).get("products", []) or []
+        all_product_ids: set[str] = set()
+        for s in sections:
+            for pid in (s.get("products") or []):
+                all_product_ids.add(pid)
+
+        if not all_product_ids:
+            return []
+
+        # Step 3: chunk product fetches (Dutchie limits batch size around 50-100)
+        products: list[NormalizedProduct] = []
+        ids = list(all_product_ids)
+        CHUNK = 50
+        for i in range(0, len(ids), CHUNK):
+            chunk = ids[i:i + CHUNK]
+            data = await _gql(page, "FilteredProducts", {
+                "includeEnterpriseSpecials": False,
+                "productsFilter": {"productIds": chunk},
+            })
+            raw_products = ((data.get("data") or {}).get("filteredProducts") or {}).get("products") or []
             for p in raw_products:
-                products.append(_parse_product(p))
+                normalized = _parse_product(p)
+                if normalized:
+                    products.append(normalized)
+            await page.wait_for_timeout(800)  # small pacing between chunks
 
-    # deduplicate by source_id
-    seen = set()
-    unique = []
-    for p in products:
-        if p.source_id not in seen:
-            seen.add(p.source_id)
-            unique.append(p)
-    return unique
-
-
-def _parse_product(p: dict) -> NormalizedProduct:
-    terpenes = {}
-    for t in (p.get("terpenes") or []):
-        name = (t.get("terpene") or {}).get("name")
-        val = t.get("value")
-        if name and val is not None:
-            terpenes[name.lower()] = float(val)
-
-    cannabinoids = {}
-    for c in (p.get("cannabinoids") or []):
-        name = (c.get("cannabinoid") or {}).get("name")
-        val = c.get("value")
-        if name and val is not None:
-            try:
-                cannabinoids[name.lower()] = float(val)
-            except (TypeError, ValueError):
-                pass
-
-    pricing = []
-    is_on_sale = False
-    sale_pct_off = None
-    for v in (p.get("variants") or []):
-        if not v.get("isAvailable"):
-            continue
-        rec = v.get("priceRec") or v.get("priceMed")
-        special = v.get("specialPriceRec") or v.get("specialPriceMed")
-        if rec is None:
-            continue
-        entry = {"weight": v.get("option", ""), "price": float(special or rec)}
-        if special and special < rec:
-            entry["original_price"] = float(rec)
-            is_on_sale = True
-            sale_pct_off = round((1 - special / rec) * 100, 1)
-        pricing.append(entry)
-
-    thc = _parse_potency(p.get("potencyThc"))
-    cbd = _parse_potency(p.get("potencyCbd"))
-
-    harvest_date = None
-    raw_harvest = p.get("harvestDate")
-    if raw_harvest:
-        try:
-            from datetime import date
-            harvest_date = date.fromisoformat(raw_harvest[:10])
-        except (ValueError, TypeError):
-            pass
-
-    return NormalizedProduct(
-        source_id=str(p["id"]),
-        name=p.get("name", ""),
-        brand=(p.get("brand") or {}).get("name"),
-        strain_name=p.get("name"),
-        category=(p.get("category") or "").lower(),
-        subcategory=(p.get("subcategory") or "").lower() or None,
-        product_type=(p.get("strainType") or "").lower() or None,
-        thc_pct=thc,
-        cbd_pct=cbd,
-        cannabinoids=cannabinoids or None,
-        terpenes=terpenes or None,
-        effects=p.get("effects") or None,
-        pricing=pricing or None,
-        is_on_sale=is_on_sale,
-        sale_pct_off=sale_pct_off,
-        image_url=p.get("image"),
-        in_stock=bool(pricing),
-        batch_id=p.get("batchNumber"),
-        harvest_date=harvest_date,
-    )
+        # Dedupe by source_id
+        seen = set()
+        unique = []
+        for p in products:
+            if p.source_id not in seen:
+                seen.add(p.source_id)
+                unique.append(p)
+        return unique
+    finally:
+        await browser.close()
+        await pw.stop()
 
 
-def _parse_potency(potency: dict | None) -> float | None:
-    if not potency:
+def _parse_potency(field: dict | None) -> float | None:
+    """Pull the first numeric value from a {unit, range:[..]} potency field."""
+    if not field:
         return None
-    rng = potency.get("range")
-    if rng and len(rng) >= 1:
+    rng = field.get("range") or []
+    if rng:
         try:
             return float(rng[0])
         except (TypeError, ValueError):
-            pass
-    formatted = potency.get("formatted", "")
-    try:
-        return float(formatted.replace("%", "").strip())
-    except (ValueError, AttributeError):
+            return None
+    return None
+
+
+def _parse_pricing(options: list, prices: list) -> tuple[list[dict], bool, float | None]:
+    """Build the pricing array. Mark sale + pct off if special pricing exists."""
+    out: list[dict] = []
+    if not options or not prices:
+        return out, False, None
+    for opt, price in zip(options, prices):
+        if price is None:
+            continue
+        out.append({"weight": str(opt), "price": float(price)})
+    return out, False, None  # sale handling done separately below
+
+
+def _parse_product(p: dict) -> NormalizedProduct | None:
+    if not p.get("id"):
         return None
+
+    name = p.get("Name") or p.get("name") or ""
+    brand = p.get("brandName") or (p.get("brand") or {}).get("name") if isinstance(p.get("brand"), dict) else p.get("brandName")
+    category = (p.get("type") or p.get("kind") or "").lower()
+
+    thc = _parse_potency(p.get("THCContent"))
+    cbd = _parse_potency(p.get("CBDContent"))
+
+    options = p.get("Options") or []
+    prices = p.get("Prices") or []
+    pricing, _, _ = _parse_pricing(options, prices)
+
+    # Sale specials — if any, compute pct off and mark on_sale
+    is_on_sale = False
+    sale_pct_off: float | None = None
+    specials = p.get("specialData") or {}
+    sale_specials = (specials or {}).get("saleSpecials") or []
+    if sale_specials:
+        # First sale special with a percent_discount applies
+        first = sale_specials[0]
+        if first.get("percentDiscount"):
+            disc = first.get("discount")
+            if disc:
+                sale_pct_off = float(disc)
+                is_on_sale = True
+                # Apply discount to pricing entries to reflect sale prices
+                for entry in pricing:
+                    original = entry["price"]
+                    entry["original_price"] = original
+                    entry["price"] = round(original * (1 - sale_pct_off / 100), 2)
+
+    image_url = p.get("Image") or p.get("image")
+    if isinstance(image_url, dict):
+        image_url = image_url.get("url")
+
+    strain_type = (p.get("strainType") or "").lower() or None
+    if strain_type == "n/a":
+        strain_type = None
+
+    return NormalizedProduct(
+        source_id=str(p["id"]),
+        name=name,
+        brand=brand,
+        strain_name=name,
+        category=category,
+        subcategory=(p.get("subcategory") or "").lower() or None,
+        product_type=strain_type,
+        thc_pct=thc,
+        cbd_pct=cbd,
+        terpenes=None,           # Dutchie doesn't expose terpenes in this query — captured separately if available
+        effects=None,
+        pricing=pricing or None,
+        is_on_sale=is_on_sale,
+        sale_pct_off=sale_pct_off,
+        image_url=image_url if isinstance(image_url, str) else None,
+        in_stock=bool(pricing),
+    )
