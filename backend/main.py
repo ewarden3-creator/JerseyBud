@@ -8,6 +8,7 @@ import models.alert       # noqa: registers models
 import models.favorite    # noqa: registers models
 import models.user        # noqa: registers models
 import models.shopping    # noqa: registers models
+import models.deal_pattern  # noqa: registers DispensaryDealPattern
 from api.routes import (
     dispensaries, products, deals, trends, recommend,
     alerts, favorites, meta, accounts, billing, reviews, brands,

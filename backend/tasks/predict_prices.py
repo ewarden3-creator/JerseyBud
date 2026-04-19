@@ -28,6 +28,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from models.base import AsyncSessionLocal
 from models.product import Product, PriceHistory
 from models.shopping import PricePrediction
+from models.deal_pattern import DispensaryDealPattern
 
 
 @shared_task(bind=True)
@@ -53,8 +54,21 @@ async def _compute_for(product: Product, db):
     )
     history = history_rows.scalars().all()
 
-    if len(history) < 3:
-        return  # not enough data
+    # Pull learned patterns for this dispensary that could affect this product
+    pattern_rows = await db.execute(
+        select(DispensaryDealPattern).where(
+            DispensaryDealPattern.dispensary_id == product.dispensary_id,
+            DispensaryDealPattern.is_active == True,
+        )
+    )
+    patterns = pattern_rows.scalars().all()
+    relevant_patterns = [
+        p for p in patterns
+        if p.category is None or p.category == (product.category or "").lower()
+    ]
+
+    if len(history) < 3 and not relevant_patterns:
+        return  # not enough data and no learned pattern
 
     # Use eighth (3.5g) prices as the canonical signal — fall back to first variant
     def price_for(h: PriceHistory) -> float | None:
@@ -124,6 +138,23 @@ async def _compute_for(product: Product, db):
         confidence = 0.5
         reasoning = f"Price is near the typical ${median:.0f} median. No strong signal either way."
 
+    # Layer in dispensary-level patterns (deterministic > statistical).
+    # If the shop has a known recurring promo upcoming for this category, that
+    # signal beats whatever the per-product stats say.
+    upcoming = _next_upcoming_pattern(relevant_patterns)
+    if upcoming:
+        days_until = max(0, (upcoming["next_at"] - datetime.now(timezone.utc)).days)
+        if days_until <= 7 and upcoming["confidence"] >= 0.6:
+            rec = "wait"
+            confidence = max(confidence, upcoming["confidence"])
+            disc = upcoming["typical_discount_pct"]
+            name = upcoming["display_name"]
+            reasoning = (
+                f"{name} at this shop in {days_until} day{'s' if days_until != 1 else ''} — "
+                f"expect ~{disc:.0f}% off based on prior weeks."
+            )
+            expected_in_days = days_until
+
     stmt = pg_insert(PricePrediction).values(
         product_id=product.id,
         current_price=current,
@@ -149,3 +180,26 @@ async def _compute_for(product: Product, db):
         },
     )
     await db.execute(stmt)
+
+
+def _next_upcoming_pattern(patterns):
+    """Pick the soonest upcoming pattern with valid timing data."""
+    valid = []
+    now = datetime.now(timezone.utc)
+    for p in patterns:
+        if not p.next_expected_at:
+            continue
+        next_at = p.next_expected_at
+        if next_at.tzinfo is None:
+            next_at = next_at.replace(tzinfo=timezone.utc)
+        if next_at < now:
+            continue
+        valid.append({
+            "next_at": next_at,
+            "typical_discount_pct": p.typical_discount_pct,
+            "confidence": p.confidence,
+            "display_name": p.display_name or "Recurring sale",
+        })
+    if not valid:
+        return None
+    return min(valid, key=lambda x: x["next_at"])

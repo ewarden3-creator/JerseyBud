@@ -30,9 +30,13 @@ app.conf.beat_schedule = {
         "task": "tasks.scrape.scrape_all",
         "schedule": settings.SCRAPE_INTERVAL_MINUTES * 60,
     },
+    "learn-deal-patterns": {
+        "task": "tasks.learn_deal_patterns.learn_all_patterns",
+        "schedule": 24 * 60 * 60,  # nightly
+    },
     "compute-price-predictions": {
         "task": "tasks.predict_prices.compute_all_predictions",
-        "schedule": 6 * 60 * 60,   # every 6 hours
+        "schedule": 6 * 60 * 60,   # every 6 hours, after pattern learning
     },
 }
 
