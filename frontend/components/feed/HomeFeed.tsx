@@ -31,9 +31,9 @@ function SectionHeader({ title, kicker, href }: { title: string; kicker?: string
 
 function ProductRow({ products }: { products: ProductOut[] }) {
   return (
-    <div className="flex gap-4 overflow-x-auto px-5 pb-2 snap-x snap-mandatory scrollbar-hide">
+    <div className="flex gap-3 overflow-x-auto px-5 pb-2 snap-x snap-mandatory scrollbar-hide">
       {products.map((p) => (
-        <div key={p.id} className="flex-shrink-0 w-72 snap-start">
+        <div key={p.id} className="flex-shrink-0 w-[330px] snap-start">
           <ProductCardCompact product={p} />
         </div>
       ))}
@@ -119,22 +119,16 @@ export function HomeFeed() {
   const { data: trends } = useSWR("trends", () => api.trends("flower"));
   const { data: brands } = useSWR("brands", () => api.brands());
 
-  const topDeal = deals?.[0];
-  const restDeals = deals?.slice(1) ?? [];
-
   return (
     <div className="min-h-screen bg-surface pb-32">
       <AskBudHero />
 
-      {/* Hero — single dominant deal card */}
-      {topDeal && <TopDealHero deal={topDeal} />}
-
-      <div className="space-y-10 mt-8">
-        {/* More deals — horizontal */}
-        {restDeals.length > 0 && (
+      <div className="space-y-10 mt-4">
+        {/* On sale — the cards do the visual work now */}
+        {deals && deals.length > 0 && (
           <section>
             <SectionHeader kicker="Save big" title="On sale near you" href="/feed?on_sale=true" />
-            <ProductRow products={restDeals.map((d) => d.product)} />
+            <ProductRow products={deals.map((d) => d.product)} />
           </section>
         )}
 
