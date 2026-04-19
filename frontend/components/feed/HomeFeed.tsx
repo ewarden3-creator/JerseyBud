@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, Search, Mic, ChevronDown, RefreshCw, Store, Globe2, MapPin } from "lucide-react";
+import { Sparkles, Mic, ChevronDown, Store, Globe2, MapPin } from "lucide-react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
@@ -12,13 +12,6 @@ import { ProductCardCompact } from "@/components/product/ProductCardCompact";
 import { SearchSheet } from "@/components/ui/SearchSheet";
 import { ShopPicker } from "@/components/ui/ShopPicker";
 import { cn } from "@/lib/utils";
-
-const QUICK_INTENTS = [
-  { emoji: "🌙", label: "Sleep",    query: "Something to help me sleep" },
-  { emoji: "🎨", label: "Creative", query: "Something uplifting for creative work" },
-  { emoji: "😌", label: "Relax",    query: "Something to take the edge off" },
-  { emoji: "💰", label: "Best deal", query: "Best deal on flower near me" },
-];
 
 const CATEGORIES = [
   { key: "flower",      label: "Flower" },
@@ -111,80 +104,67 @@ export function HomeFeed() {
     setSearchOpen(true);
   }
 
+  // Default-state empty shop chip behaves like a CTA — brand-tinted with action copy
+  const noShopSelected = !preferredShopSlug;
+  const shopLabel = preferredShop ? preferredShop.name : noShopSelected ? "Choose your shop" : "All NJ shops";
+
   return (
     <div className="min-h-screen bg-surface pb-32">
-      {/* Shop context indicator — primary scoping filter, persistent across visits */}
-      <div className="px-5 pt-4">
+      {/* One-line entry: shop chip + Ask Bud — combines two former rows */}
+      <div className="px-5 pt-4 pb-1 flex items-center gap-2">
         <button
           onClick={() => setShopPickerOpen(true)}
-          className="w-full flex items-center gap-3 bg-surface-card border border-surface-border hover:border-brand/40 rounded-2xl px-4 py-3 transition-colors text-left"
+          className={cn(
+            "flex items-center gap-1.5 px-3 h-11 rounded-pill border transition-colors flex-shrink-0 max-w-[55%]",
+            noShopSelected
+              ? "bg-brand/15 border-brand/50 text-brand hover:bg-brand/25"
+              : "bg-surface-card border-surface-border text-white hover:border-brand/40"
+          )}
         >
-          <div className="w-9 h-9 rounded-xl bg-surface-elevated flex items-center justify-center flex-shrink-0">
-            {preferredShopSlug ? (
-              <Store size={15} className="text-brand" />
-            ) : (
-              <Globe2 size={15} className="text-zinc-400" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">
-              Shopping at
-            </p>
-            <p className="text-sm font-bold text-white truncate">
-              {preferredShop ? preferredShop.name : "All NJ shops"}
-            </p>
-          </div>
-          <ChevronDown size={14} className="text-zinc-500 flex-shrink-0" />
+          {noShopSelected ? <Globe2 size={13} /> : <Store size={13} className="text-brand" />}
+          <span className="text-xs font-bold truncate">{shopLabel}</span>
+          <ChevronDown size={12} className="opacity-70 flex-shrink-0" />
         </button>
-      </div>
 
-      {/* AI concierge — the prominent entry to the assistant */}
-      <div className="px-5 pt-4 pb-3">
-        <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-2">
-          What are you in the mood for?
-        </p>
         <button
           onClick={() => openAi()}
-          className="w-full flex items-center gap-3 bg-surface-card border border-surface-border hover:border-brand/50 rounded-2xl px-4 py-3.5 transition-colors text-left mb-2"
+          className="flex-1 flex items-center gap-2 h-11 px-4 rounded-pill bg-surface-card border border-surface-border hover:border-brand/40 transition-colors text-left"
         >
-          <Sparkles size={16} className="text-brand flex-shrink-0" />
-          <span className="flex-1 text-[15px] text-zinc-400">Tell Bud what you're after…</span>
-          <Mic size={14} className="text-zinc-600" />
+          <Sparkles size={14} className="text-brand flex-shrink-0" />
+          <span className="flex-1 text-xs text-zinc-400 truncate">Ask Bud…</span>
+          <Mic size={13} className="text-zinc-600 flex-shrink-0" />
         </button>
-
-        {/* Quick intent chips — inline, single row */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
-          {QUICK_INTENTS.map((i) => (
-            <button
-              key={i.label}
-              onClick={() => openAi(i.query)}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 bg-surface-card border border-surface-border hover:border-brand/40 rounded-pill px-3 py-1.5 text-xs font-semibold text-white transition-colors"
-            >
-              <span>{i.emoji}</span>
-              <span>{i.label}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Sticky filter bar — category tabs + freshness + sort */}
+      {/* Sticky filter bar — category tabs + filter chips */}
       <div className="sticky top-[61px] z-20 bg-surface/85 backdrop-blur-md border-b border-surface-border">
-        {/* Category tabs */}
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide px-5 pt-3">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => setCategory(c.key)}
-              className={cn(
-                "flex-shrink-0 px-3 py-2 text-sm font-bold rounded-pill transition-colors whitespace-nowrap",
-                category === c.key
-                  ? "bg-brand text-black"
-                  : "text-zinc-400 hover:text-white"
-              )}
-            >
-              {c.label}
-            </button>
-          ))}
+        {/* Category tabs + freshness on the right */}
+        <div className="flex items-center gap-1 px-5 pt-3">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setCategory(c.key)}
+                className={cn(
+                  "flex-shrink-0 px-3 py-2 text-sm font-bold rounded-pill transition-colors whitespace-nowrap",
+                  category === c.key
+                    ? "bg-brand text-black"
+                    : "text-zinc-400 hover:text-white"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {/* Freshness — tiny indicator on the right */}
+          <button
+            onClick={() => mutate()}
+            className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-brand transition-colors flex-shrink-0 pl-2"
+            title="Refresh"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{minutesSinceUpdate}m</span>
+          </button>
         </div>
 
         {/* Type pills + sort + on sale toggle */}
@@ -278,22 +258,6 @@ export function HomeFeed() {
           </div>
         </div>
 
-        {/* Freshness + count strip */}
-        <div className="flex items-center justify-between px-5 py-2 border-t border-surface-border/40">
-          <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>
-              <span className="text-emerald-400 font-bold">{products?.length ?? "—"}</span> in stock now
-            </span>
-          </div>
-          <button
-            onClick={() => mutate()}
-            className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-brand transition-colors"
-          >
-            <RefreshCw size={9} />
-            Updated {minutesSinceUpdate}m ago
-          </button>
-        </div>
       </div>
 
       {/* Inventory list */}
