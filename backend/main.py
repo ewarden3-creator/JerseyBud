@@ -18,8 +18,13 @@ from api.routes import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Don't crash startup if DB isn't configured yet — health checks can still pass.
+    # Run init via `python cli.py init-db` once env vars are set.
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"[startup] DB init skipped: {type(e).__name__}: {e}")
     yield
 
 
