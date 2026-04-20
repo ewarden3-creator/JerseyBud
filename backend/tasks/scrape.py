@@ -67,8 +67,19 @@ async def _scrape_all():
 
 
 async def _seed_dispensaries():
-    dutchie_disps = await dutchie.fetch_nj_dispensaries()
-    ihj_disps = await iheartjane.fetch_nj_dispensaries()
+    # Dutchie is the primary source; iHJ is best-effort (frequently 403's us)
+    try:
+        dutchie_disps = await dutchie.fetch_nj_dispensaries()
+        print(f"[seed] Dutchie returned {len(dutchie_disps)} dispensaries")
+    except Exception as e:
+        print(f"[seed] Dutchie scrape failed: {type(e).__name__}: {e}")
+        dutchie_disps = []
+    try:
+        ihj_disps = await iheartjane.fetch_nj_dispensaries()
+        print(f"[seed] iHJ returned {len(ihj_disps)} dispensaries")
+    except Exception as e:
+        print(f"[seed] iHJ scrape failed (expected for now): {type(e).__name__}: {e}")
+        ihj_disps = []
 
     async with AsyncSessionLocal() as db:
         for nd in dutchie_disps + ihj_disps:
